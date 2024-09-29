@@ -1,0 +1,116 @@
+$primary-color: #4CAF50; // Cyan accent color
+$background-color: #121212; // Dark background
+$input-background: #1f1f1f; // Slightly lighter than background
+$error-color: #e74c3c; // Red for error messages
+$text-color: #f1f1f1; // Light text color
+$border-radius: 8px;
+
+.signup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background-color: $background-color;
+
+  .signup-form {
+    background-color: #1e1e1e;
+    padding: 2.5rem;
+    border-radius: $border-radius;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+    width: 350px;
+    text-align: center;
+    margin: 50px;
+    h2 {
+      margin-bottom: 2rem;
+      color: $primary-color;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      text-align: left;
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: $text-color;
+        font-size: 0.95rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #333;
+        background-color: $input-background;
+        color: $text-color;
+        border-radius: $border-radius;
+        font-size: 1rem;
+        transition: border 0.3s ease;
+
+        &:focus {
+          border-color: $primary-color;
+          outline: none;
+        }
+      }
+
+      .errorField {
+        border-color: $error-color;
+      }
+
+      .error {
+        color: $error-color;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    button {
+      background-color: $primary-color;
+      color: white;
+      border: none;
+      padding: 0.8rem 1rem;
+      border-radius: $border-radius;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      width: 100%;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+
+      &:hover {
+        background-color: darken($primary-color, 10%);
+        transform: translateY(-3px);
+      }
+
+      &:active {
+        transform: translateY(1px);
+      }
+    }
+
+    .links {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+
+      a {
+        color: $primary-color;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: color 0.3s ease;
+
+        &:hover {
+          color: lighten($primary-color, 10%);
+        }
+      }
+
+      .forgot-password {
+        font-size: 0.85rem;
+      }
+
+      .signup-link {
+        font-size: 0.85rem;
+        font-weight: bold;
+      }
+    }
+  }
+}

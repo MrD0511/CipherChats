@@ -1,0 +1,67 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem; // Add some padding for visual balance
+    cursor: pointer; // Indicate interactivity on hover
+    transition: all 0.2s ease-in-out; // Smooth hover effect
+    background-color: #0f1011;
+    border-radius: 0.2rem;
+    // &:hover {
+    //   background-color: #f5f5f5; // Lighten background on hover
+    // }
+
+    .website-logo{
+      height: 1.3rem;
+      padding: 0.5rem;
+      border-bottom: 1px solid gray;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      h3{
+        color: #4CAF50;
+        margin: unset;
+      }
+    }
+
+    .chats-container{
+      .heading{
+        padding: 0.5rem;
+        h4{
+          margin: unset;
+          color: white;
+        }
+      }
+      .chatMessage-container{
+        display: flex;
+        flex-direction: column;
+        border-bottom: 1px solid rgb(161, 161, 161);
+        margin-bottom: 0.2rem;
+        padding: 0.5rem;
+        cursor: pointer;
+  
+  
+  
+        .chat-name {
+          font-weight: bold;
+          font-size: 0.8rem; // Slightly larger for emphasis
+          margin-bottom: 0.5rem; // Add some space between name and message
+          color: white;
+        }
+  
+        .chat-message-box{
+          display: flex;
+          justify-content: space-between;
+          .chat-message {
+            font-size: 0.6rem; // Slightly smaller for readability
+            color: #b9b9b9; // Gray for a subdued look
+          }
+          
+          .chat-time {
+            font-size: 0.6rem; // Smaller for time info
+            color: #ccc; // Lighter gray for subtle indication
+          }
+        }
+      }
+    }
+
+  }
+  

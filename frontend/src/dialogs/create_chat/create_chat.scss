@@ -1,0 +1,144 @@
+$primary-color: #4CAF50; // Cyan accent color
+$background-color: #121212; // Dark background
+$input-background: #1f1f1f; // Slightly lighter than background
+$error-color: #e74c3c; // Red for error messages
+$text-color: #f1f1f1; // Light text color
+$border-radius: 8px;
+$box-shadow-color: rgba(0, 0, 0, 0.6);
+$dark-gray-color : rgb(135, 135, 135);
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); // Slightly darker overlay
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-box {
+  background-color: $background-color;
+  padding: 2.5rem;
+  border-radius: $border-radius;
+  box-shadow: 0 4px 10px $box-shadow-color;
+  width: 400px;
+  text-align: center;
+  color: $text-color;
+
+  h2 {
+    margin-bottom: 1.5rem;
+    color: $primary-color;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  p {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: $text-color;
+  }
+}
+
+.generate-key-btn,
+.copy-key-btn {
+  background-color: $primary-color;
+  color: $text-color;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: $border-radius;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  
+  &:hover {
+    background-color: darken($primary-color, 10%);
+    transform: translateY(-3px);
+  }
+
+  &:disabled {
+    background-color: lighten($primary-color, 20%);
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.copied-key-btn {
+    background-color: $background-color;
+    color: $primary-color; // Use primary color to indicate successful action
+    border: 2px solid $primary-color; // Add a border with the primary color
+    padding: 0.5rem 1rem;
+    border-radius: $border-radius; // Use the global border-radius variable
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    
+    &:hover {
+      background-color: lighten($background-color, 5%); // Slight hover effect
+      transform: translateY(-3px);
+    }
+  
+    &:disabled {
+      cursor: not-allowed;
+      transform: none;
+    }
+}
+
+
+.generated-key-section {
+  margin-top: 1.5rem;
+  .generated-key-box {
+    background-color: $input-background;
+    padding: 0.8rem;
+    border-radius: $border-radius;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: $text-color;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  }
+
+  .copy-key-btn {
+    width: auto; // Auto-width for the smaller button inside the key section
+    padding: 0.5rem 1rem;
+  }
+}
+
+.buttons{
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    margin-top: 1rem;
+    .close-btn{
+        background-color: $background-color;
+        color: $primary-color;
+        border: 1px solid $primary-color;
+        padding: 0.7rem 1.2rem;
+        border-radius: $border-radius;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        
+        
+        &:hover {
+            border: none;
+            background-color: darken($primary-color, 10%);
+            transform: translateY(-3px);
+            color: $text-color;
+        }
+    
+        &:disabled {
+            background-color: lighten($primary-color, 20%);
+            cursor: not-allowed;
+            transform: none;
+        }
+    }
+}
