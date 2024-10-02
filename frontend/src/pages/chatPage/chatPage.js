@@ -67,7 +67,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
     const handleMessage = () => {
         if (inputValue.trim() && ws) {
 
-            const message = { text: inputValue };
+            const message = { message: inputValue, recepient_id : user_id };
             ws.send(JSON.stringify(message))
             setMessages([...messages, message]);
             setInputValue(''); // Clear the input field
@@ -109,7 +109,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
                         <div key={index} className="message">
                             <strong>{message.sender}:</strong> 
                             <span className="message-text">
-                                {renderMessageText(message.text)}
+                                {renderMessageText(message.message)}
                             </span>
                         </div>
                     ))}

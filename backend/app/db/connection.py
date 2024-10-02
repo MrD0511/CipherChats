@@ -1,9 +1,12 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+mongodb_url = os.getenv('MONGO_URL')
 # MongoDB client setup
-client = AsyncIOMotorClient("mongodb+srv://Dhruv:CV5uZtdOjKScmtJi@cluster0.nm154p7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-
+client = AsyncIOMotorClient(mongodb_url)
 
 # Helper function to serialize ObjectId to string
 def user_serializer(user) -> dict:

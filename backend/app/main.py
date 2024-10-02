@@ -51,7 +51,7 @@ class connection_manager:
             await recipient_socket.send_json(message)
         else:
             sender_socket = self.active_connections[sender_id]
-            await sender_socket.send_text(f"User {recipient_id} is not available")
+            # await sender_socket.send_text(f"User {recipient_id} is not available")
 
 manager = connection_manager()
 
@@ -112,34 +112,39 @@ async def signin(user : SignInModel):
 @app.get('/chat/get_chat/{id}')
 async def get_chat(id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        print(id)
 
         chat = await messages_collection.aggregate([
-        # Step 1: Match messages where the user is either the sender or recipient
+            # Step 1: Match messages where the user is either the sender or recipient
             {
                 "$match": {
                     "$or": [
-                        {"sender_id": id},
-                        {"recipient_id": id}
+                        {"sender_id": user['sub'], "recepient_id": id },
+                        {"sender_id" : id, "recipient_id" : user['sub'] }
                     ]
                 }
             },
             # Step 2: Lookup to get user details for sender and recipient
             {
                 "$lookup": {
-                    "from": "users",  # Assuming the users collection is named "users"
+                    "from": "user",  # Assuming the users collection is named "users"
                     "localField": "sender_id",  # Field from the chats collection
                     "foreignField": "_id",  # Field from the users collection
                     "as": "sender_details"  # Field name for the joined sender details
                 }
             },
             {
+                "$unwind": "$sender_details"
+            },
+            {
                 "$lookup": {
-                    "from": "users",
-                    "localField": "recipient_id",
+                    "from": "user",
+                    "localField": "recepient_id",
                     "foreignField": "_id",
                     "as": "recipient_details"  # Field name for the joined recipient details
                 }
+            },
+            {
+                "$unwind": "$recipient_details"
             },
             # Step 3: Project the fields you want
             {
@@ -151,7 +156,7 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
                         "username": {"$arrayElemAt": ["$sender_details.username", 0]},
                         "name": {"$arrayElemAt": ["$sender_details.name", 0]}
                     },
-                    "recipient_id": 1,
+                    "recepient_id": 1,
                     "recipient_details": {
                         "username": {"$arrayElemAt": ["$recipient_details.username", 0]},
                         "name": {"$arrayElemAt": ["$recipient_details.name", 0]}
@@ -159,6 +164,7 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
                 }
             }
         ]).to_list()  # Convert cursor to list
+
 
         response = json.loads(json_util.dumps({ "chat" : chat }))
         return response
@@ -284,7 +290,6 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
     except Exception as e:
         print("get_chats : ",e)
 
-
 @app.websocket('/ws/chat')
 async def chat_websocket(websocket : WebSocket):
 
@@ -295,7 +300,16 @@ async def chat_websocket(websocket : WebSocket):
         while True:
             data = await websocket.receive_text()
             data = json.loads(data)
-            await manager.send_message_to_user(data,user['sub'], data['recipient'])
+            
+            messages_collection.insert_one({
+                "sender_id" : user['sub'],
+                "recepient_id" : ObjectId(data['recepient_id']),
+                "message" : ObjectId(data['message']),
+                "time_stamp" : datetime.now(),
+                "type" : "user"
+            })
+            
+            await manager.send_message_to_user(data, user['sub'], data['recepient_id'])
     except Exception as err:
         print(err)
         # manager.disconnect(username)
