@@ -1,14 +1,12 @@
-from fastapi import FastAPI, WebSocket, HTTPException, Depends
-from .db import client, get_collection
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from .database import get_collection
 from typing import Dict
 import json
-from .models import UserModel, Token, SignInModel
-from datetime import datetime, timedelta
-from .services import user_auth_services, chat_service
-from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId, json_util
-import pydantic
+from .services import user_details as user_services, chat_service
 
+import datetime
 app = FastAPI()
 
 origins = [
@@ -27,41 +25,8 @@ app.add_middleware(
 user_collection = get_collection('user')
 messages_collection = get_collection('messages')
 
-class connection_manager:
-
-    def __init__(self):
-        self.active_connections : Dict[str, WebSocket] = {}
-
-    async def connect(self, websocket : WebSocket, id: str):
-        await websocket.accept()
-        self.active_connections[id] = websocket
-
-    def disconnect(self, id):
-        self.active_connections.pop(id, None)
-
-    async def send_message(self, message, websocket: WebSocket):
-        await websocket.send_json({
-            "message" : message
-        })
-
-    async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
-        print(message, sender_id, recipient_id, "send")
-        if recipient_id in self.active_connections:
-            recipient_socket = self.active_connections[recipient_id]
-            await recipient_socket.send_json(message)
-        else:
-            sender_socket = self.active_connections[sender_id]
-            # await sender_socket.send_text(f"User {recipient_id} is not available")
-
-manager = connection_manager()
-
-async def get_user_by_username(id : str):
-    user_collection = get_collection('user')
-    data = await user_collection.find_one({ "_id" : ObjectId(id) },{"_id", "email", "name", "username"})
-    return data
-
 @app.get('/chat/get_chat/{id}')
-async def get_chat(id : str, user : dict = Depends(user_auth_services.get_current_user)):
+async def get_chat(id : str, user : dict = Depends(user_services.get_current_user)):
     try:
 
         if id:
@@ -93,11 +58,11 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get('/chat/create')
-async def create_chat(user : dict = Depends(user_auth_services.get_current_user)):
+async def create_chat(user : dict = Depends(user_services.get_current_user)):
     try:
         
         keys_collection = get_collection('keys')
-        user_data = await get_user_by_username(user['sub'])
+        user_data = await user_services.get_user_by_username(user['sub'])
         
         random_key = await chat_service.genrate_key()
 
@@ -116,9 +81,9 @@ async def create_chat(user : dict = Depends(user_auth_services.get_current_user)
         print("create_chat : ",e)
 
 @app.post('/chat/join')
-async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_current_user)):
+async def join_chat(key : dict, user : dict = Depends(user_services.get_current_user)):
     try:
-        user_data = await get_user_by_username(user['sub'])
+        user_data = await user_services.get_user_by_username(user['sub'])
         keys_collection = get_collection('keys')
         key_record = await keys_collection.find_one({ "key" : key['key'] })
 
@@ -142,9 +107,9 @@ async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_cur
         print("join_chat : ",e)
 
 @app.get('/chat/get_chats')
-async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
+async def get_chats(user : dict = Depends(user_services.get_current_user)):
     try:
-        user_data = await get_user_by_username(user['sub'])
+        user_data = await user_services.get_user_by_username(user['sub'])
 
         chats = await messages_collection.aggregate([
             # Step 1: Match messages where the user is either the sender or recipient
@@ -206,31 +171,3 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
         raise http_exc  
     except Exception as e:
         print("get_chats : ",e)
-
-@app.websocket('/ws/chat')
-async def chat_websocket(websocket : WebSocket):
-
-    token = websocket.query_params.get("token")
-    user = await user_auth_services.get_current_user(token)
-    await manager.connect(websocket, user['sub'])
-    try:
-        print("hi2")
-        while True:
-            data = await websocket.receive_text()
-            data = json.loads(data)
-            
-            messages_collection.insert_one({
-                "sender_id" : ObjectId(user['sub']),
-                "recipient_id" : ObjectId(data['recipient_id']),
-                "message" : data['message'],
-                "time_stamp" : datetime.now(),
-                "type" : "user"
-            })
-            
-            print({ "message" : data['message'], "sender_id" : data['recipient_id'], "recipient_id" :  user['sub'] } , user['sub'], data['recipient_id'])
-            await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
-            print("works")
-    except Exception as err:
-        print(err)
-        # manager.disconnect(username)
-        # print(f"User {username} disconnected")

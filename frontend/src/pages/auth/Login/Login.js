@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./Login.scss";
-import axios from 'axios';
+import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from 'react-router-dom'
 
 const Login = () => {
@@ -37,7 +37,7 @@ const Login = () => {
       setPasswordError("Password required");
     } else {
       try{
-        const response = await axios.post('http://127.0.0.1:8000/signin',{
+        const response = await axiosInstance.post('/signin',{
           "identifier" : email,
           "password" : password
         });

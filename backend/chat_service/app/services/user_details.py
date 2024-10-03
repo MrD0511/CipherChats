@@ -1,0 +1,39 @@
+from fastapi import HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
+import os
+from datetime import timedelta, datetime
+from jose import JWTError, jwt
+from dotenv import load_dotenv
+from ..database import get_collection
+from bson import ObjectId
+
+load_dotenv()
+
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated ='auto')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+secret_key = os.getenv('SECRET_KEY')
+algorithm = os.getenv('ALGORITHM')
+
+def verify_token(token: str):
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+        return payload
+    except JWTError:
+        raise credentials_exception
+    
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = verify_token(token)
+    return payload
+
+async def get_user_by_username(id : str):
+    user_collection = get_collection('user')
+    data = await user_collection.find_one({ "_id" : ObjectId(id) },{"_id", "email", "name", "username"})
+    return data

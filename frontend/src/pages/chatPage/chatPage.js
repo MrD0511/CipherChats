@@ -8,6 +8,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
     const textAreaRef = useRef(null);
     const chatBoxRef = useRef(null);
     const [ws, setWs] = useState(null)
+    const [sender_details, setSender_details] = useState(null)
 
     useEffect(() => {
         // Adjust textarea height on input change
@@ -22,10 +23,12 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
 
         const fetch_details = async () => {
             const response = await axiosInstance.get(`/chat/get_chat/${user_id}`);
-            console.log(response)
+            setSender_details(response.data?.sender_details)
+            setMessages(response.data?.chat)
         }
-
-        fetch_details()
+        if(user_id){
+            fetch_details()
+        }
 
         let token = localStorage.getItem('access_token')
 
@@ -37,11 +40,8 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
         }
 
         socket.onmessage = (event)=>{
-            const receivedMessage = event.data; // Assuming server sends a JSON object
-            console.log(JSON.parse(receivedMessage))
-            console.log(messages)
-            setMessages([...messages, JSON.parse(receivedMessage)]);
-            console.log(messages)
+            const receivedMessage = event.data;
+            setMessages(messages => [...messages, JSON.parse(receivedMessage)])
         }
 
         socket.onclose = () => {
@@ -67,7 +67,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
     const handleMessage = () => {
         if (inputValue.trim() && ws) {
 
-            const message = { message: inputValue, recepient_id : user_id };
+            const message = { message: inputValue, recipient_id : user_id };
             ws.send(JSON.stringify(message))
             setMessages([...messages, message]);
             setInputValue(''); // Clear the input field
@@ -102,16 +102,22 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
             <div className="chat-container">
                 <div className='sender'>
                     <img src='/logo192.png'/>
-                    <a>{user_id}</a>
+                    <a>{sender_details?.username}</a>
                 </div>
                 <div className="chat-box" ref={chatBoxRef}>
                     {messages.map((message, index) => (
-                        <div key={index} className="message">
-                            <strong>{message.sender}:</strong> 
+                        message?.sender_id?.$oid == user_id || message?.sender_id == user_id ? <div key={index} className="messageSender">
+                            <span className="message-text">
+                                {renderMessageText(message.message)}
+                            </span>
+                        </div> :
+
+                        <div key={index} className="Mymessage">
                             <span className="message-text">
                                 {renderMessageText(message.message)}
                             </span>
                         </div>
+
                     ))}
                 </div>
                 <div className="chat-input">
