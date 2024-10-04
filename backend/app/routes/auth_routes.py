@@ -1,25 +1,16 @@
-from fastapi import FastAPI, HTTPException
-from .models import UserModel, Token, SignInModel
-from .services import auth
-from fastapi.middleware.cors import CORSMiddleware
-from .database import get_collection
+from fastapi import APIRouter
+from fastapi import HTTPException
+from ..db import get_collection
+from ..services import user_auth_services
+from ..services import user_auth_services
+from ..models import Token, UserModel, SignInModel
 
-app = FastAPI()
-origins = [
-    "http://localhost:8000",  # Replace with your frontend URL
-    # Add other allowed origins as needed
-]
+router = APIRouter()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],  # Or specify the methods you want to allow
-    allow_headers=["*"],  # Or specify the headers you want to allow
-)
+user_collection = get_collection('user')
+messages_collection = get_collection('messages')
 
-
-@app.post('/signup', response_model=Token)
+@router.post('/auth/signup', response_model=Token)
 async def signup(user: UserModel):
     try:
         user_dict = user.dict()
@@ -28,20 +19,20 @@ async def signup(user: UserModel):
         if existing_user:
             return HTTPException(status_code=400, detail="Email is already registered")
         
-        hashed_password = auth.hash_password(user_dict['password'])
+        hashed_password = user_auth_services.hash_password(user_dict['password'])
         user_dict['password_hash'] = hashed_password
         del user_dict['password']
 
         await user_collection.insert_one(user_dict)
 
-        access_token = auth.create_access_token({ 'sub' : str(user_dict['_id'])})
+        access_token = user_auth_services.create_access_token({ 'sub' : str(user_dict['_id'])})
         return {"access_token": access_token, "token_type": "bearer"}
     
     except Exception as e:
         print(e)
         return {"message" : "error"}
         
-@app.post('/signin', response_model=Token)
+@router.post('/auth/signin', response_model=Token)
 async def signin(user : SignInModel):
     try:
         user_collection = get_collection('user')
@@ -55,10 +46,10 @@ async def signin(user : SignInModel):
         if user_data is None:
             raise HTTPException(status_code=400, detail="invalid credentials")
 
-        if not auth.verify_password(user.password, user_data['password_hash']):
+        if not user_auth_services.verify_password(user.password, user_data['password_hash']):
             raise HTTPException(status_code=400, detail="invalid credentials")
         
-        access_token = auth.create_access_token(data={"sub": str(user_data['_id'])})
+        access_token = user_auth_services.create_access_token(data={"sub": str(user_data['_id'])})
         return {"access_token": access_token, "token_type": "bearer"}
     
     except HTTPException as http_exc:

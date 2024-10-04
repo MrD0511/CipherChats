@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance" 
+import { useParams } from 'react-router-dom'
 
-const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
+const ChatPage = ({onCreateChat, onJoinChat}) => {
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const textAreaRef = useRef(null);
     const chatBoxRef = useRef(null);
     const [ws, setWs] = useState(null)
     const [sender_details, setSender_details] = useState(null)
+    const { userId } = useParams();
 
     useEffect(() => {
         // Adjust textarea height on input change
@@ -22,11 +24,13 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
     useEffect(()=>{
 
         const fetch_details = async () => {
-            const response = await axiosInstance.get(`/chat/get_chat/${user_id}`);
+            const response = await axiosInstance.get(`/chat/get_chat/${userId}`);
             setSender_details(response.data?.sender_details)
             setMessages(response.data?.chat)
         }
-        if(user_id){
+
+
+        if(userId){
             fetch_details()
         }
 
@@ -54,7 +58,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
 
 
 
-    }, [user_id])
+    }, [userId])
 
     useEffect(() => {
         // Auto-scroll to bottom when new messages are added
@@ -67,7 +71,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
     const handleMessage = () => {
         if (inputValue.trim() && ws) {
 
-            const message = { message: inputValue, recipient_id : user_id };
+            const message = { message: inputValue, recipient_id : userId };
             ws.send(JSON.stringify(message))
             setMessages([...messages, message]);
             setInputValue(''); // Clear the input field
@@ -97,7 +101,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
 
 
 
-    return user_id ? (
+    return userId != null ? (
         <>
             <div className="chat-container">
                 <div className='sender'>
@@ -106,7 +110,7 @@ const ChatPage = ({user_id, onCreateChat, onJoinChat}) => {
                 </div>
                 <div className="chat-box" ref={chatBoxRef}>
                     {messages.map((message, index) => (
-                        message?.sender_id?.$oid == user_id || message?.sender_id == user_id ? <div key={index} className="messageSender">
+                        message?.sender_id?.$oid == userId || message?.sender_id == userId ? <div key={index} className="messageSender">
                             <span className="message-text">
                                 {renderMessageText(message.message)}
                             </span>

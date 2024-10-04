@@ -37,7 +37,7 @@ const Login = () => {
       setPasswordError("Password required");
     } else {
       try{
-        const response = await axiosInstance.post('/signin',{
+        const response = await axiosInstance.post('/auth/signin',{
           "identifier" : email,
           "password" : password
         });

@@ -21,7 +21,7 @@ const ChatsPage = ({onSelectChat}) => {
     return (
         <div className="main">
           <div className='website-logo'>
-            <h3>CoolChat</h3>
+            <h3>KyChat</h3>
           </div>
           <div className='chats-container'>
             <div className='heading'>

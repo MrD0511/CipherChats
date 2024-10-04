@@ -1,32 +1,19 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from .database import get_collection
-from typing import Dict
-import json
+from fastapi import APIRouter
+from fastapi import Depends, HTTPException
+from ..db import get_collection
+from ..services import user_auth_services
 from bson import ObjectId, json_util
-from .services import user_details as user_services, chat_service
-
+import json
 import datetime
-app = FastAPI()
+from ..services import chat_service
 
-origins = [
-    "http://localhost:3000",  # Replace with your frontend URL
-    # Add other allowed origins as needed
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],  # Or specify the methods you want to allow
-    allow_headers=["*"],  # Or specify the headers you want to allow
-)
+router = APIRouter()
 
 user_collection = get_collection('user')
 messages_collection = get_collection('messages')
 
-@app.get('/chat/get_chat/{id}')
-async def get_chat(id : str, user : dict = Depends(user_services.get_current_user)):
+@router.get('/chat/get_chat/{id}')
+async def get_chat(id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
 
         if id:
@@ -57,12 +44,12 @@ async def get_chat(id : str, user : dict = Depends(user_services.get_current_use
         print("get_chat : ",e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get('/chat/create')
-async def create_chat(user : dict = Depends(user_services.get_current_user)):
+@router.get('/chat/create')
+async def create_chat(user : dict = Depends(user_auth_services.get_current_user)):
     try:
         
         keys_collection = get_collection('keys')
-        user_data = await user_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_username(user['sub'])
         
         random_key = await chat_service.genrate_key()
 
@@ -80,10 +67,10 @@ async def create_chat(user : dict = Depends(user_services.get_current_user)):
     except Exception as e:
         print("create_chat : ",e)
 
-@app.post('/chat/join')
-async def join_chat(key : dict, user : dict = Depends(user_services.get_current_user)):
+@router.post('/chat/join')
+async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_username(user['sub'])
         keys_collection = get_collection('keys')
         key_record = await keys_collection.find_one({ "key" : key['key'] })
 
@@ -106,10 +93,10 @@ async def join_chat(key : dict, user : dict = Depends(user_services.get_current_
     except Exception as e:
         print("join_chat : ",e)
 
-@app.get('/chat/get_chats')
-async def get_chats(user : dict = Depends(user_services.get_current_user)):
+@router.get('/chat/get_chats')
+async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_username(user['sub'])
 
         chats = await messages_collection.aggregate([
             # Step 1: Match messages where the user is either the sender or recipient

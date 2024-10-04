@@ -1,0 +1,67 @@
+from fastapi import WebSocket, APIRouter
+from typing import Dict
+from ..db import get_collection
+from ..services import user_auth_services
+import datetime
+from bson import ObjectId
+import json
+
+router = APIRouter()
+
+user_collection = get_collection('user')
+messages_collection = get_collection('messages')
+
+class connection_manager:
+
+    def __init__(self):
+        self.active_connections : Dict[str, WebSocket] = {}
+
+    async def connect(self, websocket : WebSocket, id: str):
+        await websocket.accept()
+        self.active_connections[id] = websocket
+
+    def disconnect(self, id):
+        self.active_connections.pop(id, None)
+
+    async def send_message(self, message, websocket: WebSocket):
+        await websocket.send_json({
+            "message" : message
+        })
+
+    async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
+        print(message, sender_id, recipient_id, "send")
+        if recipient_id in self.active_connections:
+            recipient_socket = self.active_connections[recipient_id]
+            await recipient_socket.send_json(message)
+        else:
+            sender_socket = self.active_connections[sender_id]
+            # await sender_socket.send_text(f"User {recipient_id} is not available")
+
+manager = connection_manager()
+
+@router.websocket('/ws/chat')
+async def chat_websocket(websocket : WebSocket):
+
+    token = websocket.query_params.get("token")
+    user = await user_auth_services.get_current_user(token)
+    await manager.connect(websocket, user['sub'])
+    try:
+        print("hi2")
+        while True:
+            data = await websocket.receive_text()
+            data = json.loads(data)
+            
+            messages_collection.insert_one({
+                "sender_id" : ObjectId(user['sub']),
+                "recipient_id" : ObjectId(data['recipient_id']),
+                "message" : data['message'],
+                "time_stamp" : datetime.now(),
+                "type" : "user"
+            })
+            
+            await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
+            
+    except Exception as err:
+        print(err)
+        # manager.disconnect(username)
+        # print(f"User {username} disconnected")

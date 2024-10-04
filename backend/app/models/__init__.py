@@ -1,1 +1,2 @@
-from .user import UserModel, Token, SignInModel
+from .auth import UserModel, Token, SignInModel
+from .user import editProfileModel

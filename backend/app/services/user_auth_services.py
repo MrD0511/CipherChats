@@ -5,6 +5,8 @@ from jose import JWTError, jwt
 from dotenv import load_dotenv
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
+from bson import ObjectId
+from ..db import get_collection
 
 load_dotenv()
 
@@ -48,3 +50,8 @@ def verify_token(token: str):
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = verify_token(token)
     return payload
+
+async def get_user_by_username(id : str):
+    user_collection = get_collection('user')
+    data = await user_collection.find_one({ "_id" : ObjectId(id) },{"_id", "email", "name", "username"})
+    return data
