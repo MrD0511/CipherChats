@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance" 
 import { useParams } from 'react-router-dom'
+import {User} from 'lucide-react'
 
 const ChatPage = ({onCreateChat, onJoinChat}) => {
     const [messages, setMessages] = useState([]);
@@ -105,8 +106,8 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
         <>
             <div className="chat-container">
                 <div className='sender'>
-                    <img src='/logo192.png'/>
-                    <a>{sender_details?.username}</a>
+                    { sender_details?.profile_photo ? <img src={sender_details?.profile_photo}  alt={sender_details?.username}  />: <User />}
+                    <span>{sender_details?.name}</span>
                 </div>
                 <div className="chat-box" ref={chatBoxRef}>
                     {messages.map((message, index) => (

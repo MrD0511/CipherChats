@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Settings, LogOut, Trash2, Edit2, UserCircleIcon } from 'lucide-react';
 import './profile.scss';
+import axiosInstance from '../../axiosInstance';
+import { useNavigate } from 'react-router-dom';
+
 
 const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
-  const [user] = useState({
-    name: 'John Doe',
-    username: 'johndoe',
-    avatarUrl: null,
-  });
+  const [user_details, setUser_details] = useState(null)
+  
+  const navigate = useNavigate()
+
+  useEffect(()=>{
+    const fetch_user_details = async () => {
+      try{
+        let response = await axiosInstance.get('/user/profile');
+        setUser_details(Object(response.data))
+      }catch(e){
+        console.error(e)
+      }
+    }
+    fetch_user_details()
+  },[])
 
   const handleEditProfile = () => {
     // Implement edit profile logic
@@ -22,8 +35,8 @@ const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
   };
 
   const handleLogout = () => {
-    // Implement logout logic
-    console.log('Logout');
+    localStorage.removeItem('access_token')
+    navigate('/signin')
   };
 
   const handleDeleteAccount = () => {
@@ -42,14 +55,14 @@ const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
         <div className="profile-content">
           <div className="profile-header">
             <div className="avatar">
-              {user.avatarUrl ? 
-                <img src={user.avatarUrl} alt={user.name} />   :
+              {user_details?.profile_url ? 
+                <img src={user_details?.profile_url} alt={user_details?.name} />   :
                 <UserCircleIcon className='noAvatar'/>
               }
               
             </div>
-            <h2 className="name">{user.name}</h2>
-            <p className="username">@{user.username}</p>
+            <h2 className="name">{user_details?.name}</h2>
+            <p className="username">@{user_details?.username}</p>
           </div>
           <div className="profile-actions">
             <button className="action-button edit-profile" onClick={handleEditProfile}>

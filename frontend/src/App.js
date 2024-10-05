@@ -1,15 +1,18 @@
-import './App.css';
+import './App.scss';
 import {BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './pages/layout/layout';
 import Login from './pages/auth/Login/Login';
 import Signup from './pages/auth/Signup/SignUp';
 
 function App() {
+
+
+
   return (
     <Router>
       <Routes>
-        <Route path='/' element={<Layout />} />
-        <Route path='/chats/:userId' element={<Layout />} />
+        <Route path='/' element={<Layout />}  className="layout"/>
+        <Route path='/chats/:userId' element={<Layout />} className="layout"/>
         <Route path='/signin' element={<Login />} />
         <Route path='/signup' element={<Signup />} />
       </Routes>

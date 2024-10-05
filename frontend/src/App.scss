@@ -1,0 +1,18 @@
+.body{
+    background-color: black;
+}
+
+@media screen and (min-width : 600px) {
+    .chatsPage{
+        display: none;
+    }
+    .chatPage{
+        display: none;
+    }
+}
+
+@media screen and (max-width : 600px) {
+    .layout{
+        display: none;
+    }
+}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import '../chats/chatsPage.scss'
 import axiosInstance from '../../axiosInstance';
+import  {User} from 'lucide-react';
 
-const ChatsPage = ({onSelectChat}) => {
+const ChatsPage = ({onSelectChat, profile_details, openProfile}) => {
     
     const [chats, setChats] = useState([])
 
@@ -20,8 +21,17 @@ const ChatsPage = ({onSelectChat}) => {
 
     return (
         <div className="main">
-          <div className='website-logo'>
-            <h3>KyChat</h3>
+          <div className='header'>
+            <div className='website-logo'>
+              <h3>KyChat</h3>
+            </div>
+            <div className='options'>
+              <div onClick={openProfile}>
+                { profile_details?.profile_url ? 
+                    <img className="profile_photo" img src={profile_details?.profile_url} alt='profile' />
+                    : <User />
+                }</div>
+            </div>
           </div>
           <div className='chats-container'>
             <div className='heading'>
@@ -34,7 +44,7 @@ const ChatsPage = ({onSelectChat}) => {
                     <strong>{chat.partner_details?.name}</strong>
                   </div>
                   <div className="chat-message-box">
-                    <span className="chat-message">{chat.latst_message?.type != 'sender' ? "New Chat" : chat.latst_message?.message}</span>
+                    <span className="chat-message">{chat.latst_message?.type !== 'sender' ? "New Chat" : chat.latst_message?.message}</span>
                     <span className="chat-time">{chat.latst_message?.time_stamp}</span>
                   </div>
                 </div>

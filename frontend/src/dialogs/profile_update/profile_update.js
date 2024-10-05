@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Edit2 } from 'lucide-react';
 import './profile_update.scss'
 import axiosInstance from '../../axiosInstance';
-import { AxiosHeaders } from 'axios';
 
-const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
+const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
   const [formData, setFormData] = useState({
     username: '',
     name: '',
@@ -14,7 +13,11 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        username: initialData?.username,
+        name: initialData?.name,
+        profile_photo: initialData?.profile_url,
+      });
     }
   }, [initialData]);
 
@@ -83,8 +86,7 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
           'Content-Type': 'multipart/form-data',
         },
       }) 
-      if(response.status == 200){
-        console.log("edited successfully")
+      if(response.status === 200){
         onClose();
       }
     }

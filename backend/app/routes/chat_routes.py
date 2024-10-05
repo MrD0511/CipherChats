@@ -133,7 +133,7 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
                     "from": "user",              # Assuming the users are stored in the "user" collection
                     "localField": "_id",          # Field from the current collection (partner_id)
                     "foreignField": "_id",        # Field from the "user" collection (_id of the partner)
-                    "as": "partner_details"       # Field name for the joined partner details
+                    "as": "partner_details",       # Field name for the joined partner details
                 }
             },
             # Step 5: Unwind the user details (since $lookup returns an array)
@@ -145,7 +145,7 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
                 "$project": {
                     "_id": 0,                         # Exclude the default _id
                     "partner_id": "$_id",              # Include the partner_id
-                    "partner_details": 1,              # Include the partner details
+                    "partner_details": 1,          # Include the partner details
                     "latest_message": 1                # Include the latest message for each unique chat participant
                 }
             }

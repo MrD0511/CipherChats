@@ -6,19 +6,37 @@
     transition: all 0.2s ease-in-out; // Smooth hover effect
     background-color: #0f1011;
     border-radius: 0.2rem;
-    // &:hover {
-    //   background-color: #f5f5f5; // Lighten background on hover
-    // }
-
-    .website-logo{
-      height: 1.3rem;
-      padding: 0.5rem;
-      border-bottom: 1px solid gray;
+    height: 100%;
+    .header{
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.8rem;
-      h3{
-        color: #4CAF50;
-        margin: unset;
+      border-bottom: 1px solid gray;
+      padding: 0.8rem;
+      .website-logo{
+        padding: 0.5rem;
+        h3{
+          color: #4CAF50;
+          margin: unset;
+          font-size: 2rem;
+          margin: unset;
+        }
+      }
+      .options{
+        display: none;
+        div{
+          text-align: center;
+          font-size: medium;
+          color : rgb(158, 158, 158);
+          font-size: 1.75;
+          width: 2rem;
+          .profile_photo{
+              width: 2rem;
+              height: 2rem;
+              object-fit: cover;
+              border-radius: 50%;
+          }
+        }
       }
     }
 
@@ -63,5 +81,14 @@
       }
     }
 
+}
+
+@media screen and (max-width : 768px) {
+  .main{
+    .header{
+      .options{
+        display: block;
+      }
+    }
   }
-  
+}
