@@ -5,4 +5,3 @@ from pydantic import BaseModel
 class editProfileModel(BaseModel):
     username : str
     name : str
-    # profile_photo : Optional[UploadFile] = None

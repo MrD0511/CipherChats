@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Edit2 } from 'lucide-react';
 import './profile_update.scss'
 import axiosInstance from '../../axiosInstance';
+import { AxiosHeaders } from 'axios';
 
 const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
     username: '',
     name: '',
-    profile_avatar: null,
+    profile_photo: null,
   });
   const [errors, setErrors] = useState({});
 
@@ -64,7 +65,7 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
     if (file) {
       setFormData((prevData) => ({
         ...prevData,
-        profile_avatar: file,
+        profile_photo: file,
       }));
     }
   };
@@ -73,7 +74,15 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
     e.preventDefault();
     const isValid = await validateForm();  // Await here for async validation
     if (isValid) {
-      const response = await axiosInstance.post('/user/profile/edit',formData) 
+      const form_data = new FormData()
+      form_data.append("username", formData.username)
+      form_data.append("name", formData.name)
+      form_data.append("profile_photo", formData.profile_photo)
+      const response = await axiosInstance.post('/user/profile/edit',form_data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }) 
       if(response.status == 200){
         console.log("edited successfully")
         onClose();
@@ -90,10 +99,10 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
           <X size={18} />
         </button>
         <h2>Edit Profile</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} encType='multipart/form-data'>
           <div className="avatar-section">
             <img
-              src={formData.profile_avatar || '/default-avatar.png'}
+              src={formData.profile_photo || '/default-avatar.png'}
               alt="Profile"
               className="current-avatar"
             />
@@ -106,6 +115,7 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
                 accept="image/*"
                 onChange={handleAvatarChange}
                 style={{ display: 'none' }}
+              
               />
             </label>
           </div>
