@@ -110,7 +110,7 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
                 </div>
                 <div className="chat-box" ref={chatBoxRef}>
                     {messages.map((message, index) => (
-                        message?.sender_id?.$oid == userId || message?.sender_id == userId ? <div key={index} className="messageSender">
+                        message?.sender_id?.$oid === userId || message?.sender_id === userId ? <div key={index} className="messageSender">
                             <span className="message-text">
                                 {renderMessageText(message.message)}
                             </span>

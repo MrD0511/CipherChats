@@ -1,4 +1,4 @@
-$primary-color: #4CAF50; // Cyan accent color
+$primary-color: #4CAF50; // Green accent color
 $background-color: #121212; // Dark background
 $input-background: #1f1f1f; // Slightly lighter than background
 $error-color: #e74c3c; // Red for error messages
@@ -9,17 +9,20 @@ $border-radius: 8px;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  height: 100vh; // Full screen height
   background-color: $background-color;
+  padding: 1rem; // Padding for smaller screens
 
   .signup-form {
     background-color: #1e1e1e;
     padding: 2.5rem;
     border-radius: $border-radius;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-    width: 350px;
+    width: 100%; // Full width for smaller screens
+    max-width: 400px; // Adjust max width for larger screens
     text-align: center;
-    margin: 50px;
+    margin: 50px auto; // Center the form
+
     h2 {
       margin-bottom: 2rem;
       color: $primary-color;
@@ -39,7 +42,7 @@ $border-radius: 8px;
       }
 
       input {
-        width: 100%;
+        width: 100%; // Ensures input takes up full width
         padding: 0.75rem;
         border: 1px solid #333;
         background-color: $input-background;
@@ -47,6 +50,7 @@ $border-radius: 8px;
         border-radius: $border-radius;
         font-size: 1rem;
         transition: border 0.3s ease;
+        box-sizing: border-box; // Ensures padding & borders are included in width
 
         &:focus {
           border-color: $primary-color;
@@ -102,15 +106,27 @@ $border-radius: 8px;
           color: lighten($primary-color, 10%);
         }
       }
-
-      .forgot-password {
-        font-size: 0.85rem;
-      }
-
-      .signup-link {
-        font-size: 0.85rem;
-        font-weight: bold;
-      }
     }
+  }
+}
+
+// Media query for smaller screens (mobile view)
+@media (max-width: 600px) {
+  .signup-form {
+    padding: 1.5rem; // Reduce padding on smaller screens
+    margin: 20px; // Reduce margin for mobile view
+    width: 90%; // Ensure width adapts to smaller screens
+  }
+
+  input {
+    padding: 0.7rem; // Slightly reduce input padding on smaller screens
+  }
+
+  button {
+    padding: 0.7rem 1rem; // Adjust button padding for smaller screens
+  }
+
+  h2 {
+    font-size: 1.5rem; // Adjust font size for headings on smaller screens
   }
 }

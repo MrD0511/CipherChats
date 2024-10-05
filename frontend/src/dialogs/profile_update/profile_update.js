@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit2 } from 'lucide-react';
 import './profile_update.scss'
+import axiosInstance from '../../axiosInstance';
 
 const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
@@ -16,16 +17,36 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
     }
   }, [initialData]);
 
-  const validateForm = () => {
+  const validate_username = async (username) => {
+    try {
+      const response = await axiosInstance.get(`/user/check_username/${username}`);
+      if (response.status === 200) {  // Corrected this part
+        return true;
+      }
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const validateForm = async () => {
     const newErrors = {};
+
     if (!formData.username.trim()) {
       newErrors.username = 'Required';
     } else if (formData.username.length < 3) {
       newErrors.username = 'Min 3 characters';
+    } else {
+      // Await for the async username validation here
+      const usernameAvailable = await validate_username(formData.username);
+      if (!usernameAvailable) {
+        newErrors.username = 'Username unavailable';
+      }
     }
+
     if (!formData.name.trim()) {
       newErrors.name = 'Required';
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -48,11 +69,15 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave(formData);
-      onClose();
+    const isValid = await validateForm();  // Await here for async validation
+    if (isValid) {
+      const response = await axiosInstance.post('/user/profile/edit',formData) 
+      if(response.status == 200){
+        console.log("edited successfully")
+        onClose();
+      }
     }
   };
 
@@ -67,9 +92,9 @@ const EditProfileDialog = ({ isOpen, onClose, onSave, initialData }) => {
         <h2>Edit Profile</h2>
         <form onSubmit={handleSubmit}>
           <div className="avatar-section">
-            <img 
-              src={formData.profile_avatar || '/default-avatar.png'} 
-              alt="Profile" 
+            <img
+              src={formData.profile_avatar || '/default-avatar.png'}
+              alt="Profile"
               className="current-avatar"
             />
             <label htmlFor="profile_avatar" className="edit-avatar-button">

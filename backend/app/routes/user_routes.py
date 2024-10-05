@@ -7,6 +7,7 @@ from typing import Optional
 import datetime
 from ..services import chat_service, user_auth_services
 from ..models import editProfileModel
+from ..firebase import firebase_admin
 
 router = APIRouter()
 
@@ -30,7 +31,7 @@ async def edit_profile(profile_data : editProfileModel,
                                                 "name" : profile_data_dict['name']
                                              }
                                          })
-
+    
         return { "msg" : "profile updated successfully" }
     except HTTPException as http_exc:
         raise http_exc  
@@ -48,3 +49,4 @@ async def check_username(username : str, user : Optional[dict] = Depends(user_au
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server Error")
+
