@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../chats/chatsPage.scss';
 import axiosInstance from '../../axiosInstance';
-import { User, MessageSquare, Search } from 'lucide-react';
+import { User, Search } from 'lucide-react';
 
 const ChatsPage = ({ onSelectChat, profile_details, openProfile }) => {
   const [chats, setChats] = useState([]);
