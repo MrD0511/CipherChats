@@ -34,7 +34,7 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
         }
 
         const token = localStorage.getItem('access_token')
-        const socket = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`)
+        const socket = new WebSocket(`ws://kychat.onrender.com/ws/chat?token=${token}`)
         setWs(socket)
 
         socket.onopen = () => console.log("WebSocket connected")

@@ -7,8 +7,7 @@ class UserModel(BaseModel):
     password : str
     username : str
     name : str
-    # createdAt : datetime
-    # updatedAt : datetime
+
 
 class Token(BaseModel):
     access_token: str

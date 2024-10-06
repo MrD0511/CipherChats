@@ -39,6 +39,12 @@ const Layout = () => {
   }, []);
 
   useEffect(() => {
+
+    const token = localStorage.getItem('access_token')
+    if(!token){
+      navigate('/signin')
+    }
+
     const fetchUserDetails = async () => {
       try {
         const response = await axiosInstance.get('/user/profile');

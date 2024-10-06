@@ -8,7 +8,6 @@ mongodb_url = os.getenv('MONGO_URL')
 # MongoDB client setup
 client = AsyncIOMotorClient(mongodb_url)
 
-print(mongodb_url)
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import "./SignUp.scss";
+import axiosInstance from "../../../axiosInstance";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -9,7 +11,8 @@ const Signup = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-
+  const [errorMsg , setErrorMsg] = useState("")
+  const navigate = useNavigate()
   const validateEmail = (email) => {
     if (email === "") {
       setEmailError("Email required");
@@ -50,7 +53,7 @@ const Signup = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!name || !email || !password || !confirmPassword) {
@@ -59,6 +62,22 @@ const Signup = () => {
       setConfirmPasswordError("Please confirm your password");
     } else {
       console.log("Signing up:", { name, email, password });
+      try{
+        const response = await axiosInstance.post('/auth/signup',{
+          "username" : name,
+          "password" : password,
+          "name" : name,
+          "email" : email
+        });
+        localStorage.setItem('access_token',response.data.access_token)
+        navigate('/')
+      }catch(error){
+          if (error.response) {
+            setErrorMsg(error.response.data.detail || 'An error occurred');
+          } else {
+            setErrorMsg('Network error. Please try again later.');
+          }
+      }
     }
   };
 
@@ -66,6 +85,7 @@ const Signup = () => {
     <div className="signup-container">
       <form className="signup-form" onSubmit={handleSubmit}>
         <h2>Sign Up</h2>
+        <div>{errorMsg}</div>
         <div className="form-group">
           <label>Name</label>
           <input
