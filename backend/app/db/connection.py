@@ -8,17 +8,7 @@ mongodb_url = os.getenv('MONGO_URL')
 # MongoDB client setup
 client = AsyncIOMotorClient(mongodb_url)
 
-# Helper function to serialize ObjectId to string
-def user_serializer(user) -> dict:
-    return {
-        "id": str(user["_id"]),
-        "username": user["username"],
-        "email": user["email"],
-        "full_name": user.get("full_name", "")
-    }
-
-
-
+print(mongodb_url)
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")
@@ -26,10 +16,7 @@ except Exception as e:
     print(e)
 
 db = client['chatapp']
-users_collection = db['users']
 
 def get_collection(collection):
     return db[collection]
-
-db.list_collection_names()
 
