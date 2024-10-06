@@ -23,6 +23,14 @@ const Layout = () => {
   const { chatId, userId } = useParams();
   const navigate = useNavigate();
 
+  useEffect(()=>{
+    const token = localStorage.getItem('access_token')
+    if(!token){
+      navigate('/signin')
+    } 
+  })
+
+
   const toggleDialog = useCallback((dialogName) => {
     setDialogStates(prevState => ({
       ...prevState,
@@ -39,11 +47,6 @@ const Layout = () => {
   }, []);
 
   useEffect(() => {
-
-    const token = localStorage.getItem('access_token')
-    if(!token){
-      navigate('/signin')
-    }
 
     const fetchUserDetails = async () => {
       try {
