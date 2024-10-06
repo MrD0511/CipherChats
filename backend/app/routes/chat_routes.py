@@ -4,7 +4,7 @@ from ..db import get_collection
 from ..services import user_auth_services
 from bson import ObjectId, json_util
 import json
-import datetime
+from datetime import datetime
 from ..services import chat_service
 
 router = APIRouter()

@@ -2,7 +2,7 @@ from fastapi import WebSocket, APIRouter
 from typing import Dict
 from ..db import get_collection
 from ..services import user_auth_services
-import datetime
+from datetime import datetime
 from bson import ObjectId
 import json
 
@@ -35,7 +35,6 @@ class connection_manager:
             await recipient_socket.send_json(message)
         else:
             sender_socket = self.active_connections[sender_id]
-            # await sender_socket.send_text(f"User {recipient_id} is not available")
 
 manager = connection_manager()
 

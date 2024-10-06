@@ -1,4 +1,4 @@
-$primary-color: #4CAF50; // Cyan accent color
+$primary-color: #8a2be2; // Purple accent color
 $background-color: #121212; // Dark background
 $input-background: #1f1f1f; // Slightly lighter than background
 $error-color: #e74c3c; // Red for error messages
@@ -62,10 +62,9 @@ $box-shadow-color: rgba(0, 0, 0, 0.6);
   }
 }
 
-.buttons{
-    display: flex;
-    justify-content: space-between;
-
+.buttons {
+  display: flex;
+  justify-content: space-between;
 }
 
 .btn {
@@ -79,7 +78,6 @@ $box-shadow-color: rgba(0, 0, 0, 0.6);
   font-weight: bold;
   margin-top: 1rem;
   transition: background-color 0.3s ease, transform 0.2s ease;
-  
 
   &:hover {
     background-color: darken($primary-color, 10%);

@@ -127,6 +127,15 @@ const Signup = () => {
           </a>
         </div>
       </form>
+      <div className="stars">
+        {[...Array(20)].map((_, i) => (
+          <div key={i} className="star" style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 2}s`
+          }}></div>
+        ))}
+      </div>
     </div>
   );
 };

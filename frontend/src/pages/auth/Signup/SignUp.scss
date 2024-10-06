@@ -1,8 +1,8 @@
-$primary-color: #4CAF50; // Green accent color
-$background-color: #121212; // Dark background
-$input-background: #1f1f1f; // Slightly lighter than background
+$primary-color: #8a2be2; // Purple accent color
+$background-color: #000000; // Dark background
+$input-background: #0f131e; // Slightly lighter than background
 $error-color: #e74c3c; // Red for error messages
-$text-color: #f1f1f1; // Light text color
+$text-color: #e1e1e1; // Light text color
 $border-radius: 8px;
 
 .signup-container {
@@ -14,7 +14,8 @@ $border-radius: 8px;
   padding: 1rem; // Padding for smaller screens
 
   .signup-form {
-    background-color: #1e1e1e;
+    z-index: 1;
+    background-color: $input-background;
     padding: 2.5rem;
     border-radius: $border-radius;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
@@ -22,6 +23,7 @@ $border-radius: 8px;
     max-width: 400px; // Adjust max width for larger screens
     text-align: center;
     margin: 50px auto; // Center the form
+    height: fit-content;
 
     h2 {
       margin-bottom: 2rem;
@@ -108,6 +110,16 @@ $border-radius: 8px;
       }
     }
   }
+
+
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background-color: white;
+    border-radius: 50%;
+    animation: twinkle 2s infinite;
+  }
 }
 
 // Media query for smaller screens (mobile view)
@@ -129,4 +141,9 @@ $border-radius: 8px;
   h2 {
     font-size: 1.5rem; // Adjust font size for headings on smaller screens
   }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }

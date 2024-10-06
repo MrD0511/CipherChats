@@ -1,81 +1,79 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance" 
-import { useParams } from 'react-router-dom'
-import {User} from 'lucide-react'
+import { useParams,Link } from 'react-router-dom'
+import { User, Image as ImageIcon, Send, ArrowLeft, EllipsisVertical } from 'lucide-react'
 
 const ChatPage = ({onCreateChat, onJoinChat}) => {
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
+    const [imageFile, setImageFile] = useState(null);
     const textAreaRef = useRef(null);
     const chatBoxRef = useRef(null);
+    const fileInputRef = useRef(null);
     const [ws, setWs] = useState(null)
     const [sender_details, setSender_details] = useState(null)
     const { userId } = useParams();
 
     useEffect(() => {
-        // Adjust textarea height on input change
-        const textArea = textAreaRef.current;
-        if (textArea) {
-            textArea.style.height = 'auto'; // Reset height
-            textArea.style.height = `${textArea.scrollHeight}px`; // Set new height based on content
+        if (textAreaRef.current) {
+            textAreaRef.current.style.height = 'auto';
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
         }
     }, [inputValue]);
 
-    useEffect(()=>{
-
-        const fetch_details = async () => {
+    useEffect(() => {
+        const fetchDetails = async () => {
             const response = await axiosInstance.get(`/chat/get_chat/${userId}`);
             setSender_details(response.data?.sender_details)
             setMessages(response.data?.chat)
         }
 
-
-        if(userId){
-            fetch_details()
+        if (userId) {
+            fetchDetails()
         }
 
-        let token = localStorage.getItem('access_token')
-
+        const token = localStorage.getItem('access_token')
         const socket = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`)
         setWs(socket)
 
-        socket.onopen = ()=>{
-            console.log("websocket open")
+        socket.onopen = () => console.log("WebSocket connected")
+        socket.onmessage = (event) => {
+            const receivedMessage = JSON.parse(event.data);
+            setMessages(messages => [...messages, receivedMessage])
         }
+        socket.onclose = () => console.log("WebSocket disconnected");
 
-        socket.onmessage = (event)=>{
-            const receivedMessage = event.data;
-            setMessages(messages => [...messages, JSON.parse(receivedMessage)])
-        }
-
-        socket.onclose = () => {
-            console.log("WebSocket disconnected.");
-        };
-
-        return () => {
-            socket.close();
-        };
-
-
-
+        return () => socket.close();
     }, [userId])
 
     useEffect(() => {
-        // Auto-scroll to bottom when new messages are added
-        const chatBox = chatBoxRef.current;
-        if (chatBox) {
-            chatBox.scrollTop = chatBox.scrollHeight;
+        if (chatBoxRef.current) {
+            chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
-    }, [messages]); // Dependency array to trigger effect when messages change
+    }, [messages]);
 
-    const handleMessage = () => {
-        if (inputValue.trim() && ws) {
+    const handleMessage = async () => {
+        if ((inputValue.trim() || imageFile) && ws) {
+            let message = { message: inputValue, recipient_id: userId };
 
-            const message = { message: inputValue, recipient_id : userId };
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('image', imageFile);
+                
+                try {
+                    const response = await axiosInstance.post('/upload_image', formData);
+                    message.image_url = response.data.image_url;
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                    return;
+                }
+            }
+
             ws.send(JSON.stringify(message))
             setMessages([...messages, message]);
-            setInputValue(''); // Clear the input field
+            setInputValue('');
+            setImageFile(null);
         }
     };
 
@@ -86,64 +84,94 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
         }
     };
 
-    const handleTextChange = (e) => {
-        setInputValue(e.target.value);
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+        }
     };
 
-    const renderMessageText = (text) => {
-        return text.split('\n').map((line, index) => (
-            <React.Fragment key={index}>
-                {line}
-                {index < text.split('\n').length - 1 && <br />}
-            </React.Fragment>
-        ));
-    };
-
-
-
+    const renderMessageContent = (message) => (
+        <>
+            {message.image_url && (
+                <img src={message.image_url} alt="Uploaded" className="message-image" />
+            )}
+            {message.message && (
+                <span className="message-text">
+                    {message.message.split('\n').map((line, index) => (
+                        <React.Fragment key={index}>
+                            {line}
+                            {index < message.message.split('\n').length - 1 && <br />}
+                        </React.Fragment>
+                    ))}
+                </span>
+            )}
+        </>
+    );
 
     return userId != null ? (
-        <>
-            <div className="chat-container">
-                <div className='sender'>
-                    { sender_details?.profile_photo ? <img src={sender_details?.profile_photo}  alt={sender_details?.username}  />: <User />}
+        <div className="chat-container">
+            <div className='sender'>
+                <div className='details' >
+                    <Link to='/' className='back-button'>
+                        <ArrowLeft />
+                    </Link>
+                    {sender_details?.profile_photo_url ? 
+                        <img src={sender_details?.profile_photo_url} alt={sender_details.username} /> 
+                        : <User className="user-icon" />
+                    }
                     <span>{sender_details?.name}</span>
                 </div>
-                <div className="chat-box" ref={chatBoxRef}>
-                    {messages.map((message, index) => (
-                        message?.sender_id?.$oid === userId || message?.sender_id === userId ? <div key={index} className="messageSender">
-                            <span className="message-text">
-                                {renderMessageText(message.message)}
-                            </span>
-                        </div> :
-
-                        <div key={index} className="Mymessage">
-                            <span className="message-text">
-                                {renderMessageText(message.message)}
-                            </span>
-                        </div>
-
-                    ))}
-                </div>
-                <div className="chat-input">
-                    <textarea
-                        ref={textAreaRef}
-                        value={inputValue}
-                        onChange={handleTextChange}
-                        onKeyDown={handleKeyPress}
-                        placeholder="Type a message..."
-                        rows={1}
-                    />
-                    <button onClick={handleMessage}>Send</button>
+                <div className='options'>
+                    <EllipsisVertical />
                 </div>
             </div>
-        </>
+            <div className="chat-box" ref={chatBoxRef}>
+
+                {messages.map((message, index) => (
+                    <div key={index} className={message?.sender_id?.$oid === userId || message?.sender_id === userId ? "messageSender" : "Mymessage"}>
+                        <div className="message-content">
+                            {renderMessageContent(message)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="chat-input">
+                <textarea
+                    ref={textAreaRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Type a message..."
+                    rows={1}
+                />
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                />
+                <button className="upload-image" onClick={() => fileInputRef.current.click()}>
+                    <ImageIcon size={20} />
+                </button>
+                <button className="send-message" onClick={handleMessage}>
+                    <Send size={20} />
+                </button>
+            </div>
+            {imageFile && (
+                <div className="image-preview">
+                    <img src={URL.createObjectURL(imageFile)} alt="Preview" />
+                    <button onClick={() => setImageFile(null)}>Remove</button>
+                </div>
+            )}
+        </div>
     ) : (            
         <div className="start-chat-container">
-            <button className="start-chat-button"onClick={()=>onCreateChat()}>
+            <button className="start-chat-button" onClick={onCreateChat}>
                 Create Chat
             </button>
-            <button className="join-chat-button" onClick={()=>onJoinChat()}>
+            <button className="join-chat-button" onClick={onJoinChat}>
                 Join Chat
             </button>
         </div>

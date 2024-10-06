@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ChatPage from '../chatPage/chatPage.js';
 import ChatsPage from '../chats/chatsPage.js';
@@ -11,49 +11,47 @@ import ProfilePage from '../../dialogs/profile/profile.js';
 import axiosInstance from '../../axiosInstance.js';
 
 const Layout = () => {
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
-  const [isJoinDialogOpen, setJoinDialogOpen] = useState(false);
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [isProfileOpen, setIsProileOpen] = useState(false)
-  const [profile_details, setProfile_details] = useState(null)
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768); // 768px is a common breakpoint for mobile
-  // Get chatId from the URL parameters
-  const { chatId } = useParams();
+  const [dialogStates, setDialogStates] = useState({
+    isCreateDialogOpen: false,
+    isJoinDialogOpen: false,
+    isEditProfileOpen: false,
+    isProfileOpen: false
+  });
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  
+  const { chatId, userId } = useParams();
   const navigate = useNavigate();
-  const {userId} = useParams()
 
-  // Functions to handle dialogs
-  const openEditProfile = () => setIsEditProfileOpen(true);
-  const closeEditProfile = () => setIsEditProfileOpen(false);
-  const openCreateDialog = () => setCreateDialogOpen(true);
-  const closeCreateDialog = () => setCreateDialogOpen(false);
-  const openJoinDialog = () => setJoinDialogOpen(true);
-  const closeJoinDialog = () => setJoinDialogOpen(false);
-  const openProfile = () => setIsProileOpen(true);
-  const closeProfile = () => setIsProileOpen(false);
+  const toggleDialog = useCallback((dialogName) => {
+    setDialogStates(prevState => ({
+      ...prevState,
+      [dialogName]: !prevState[dialogName]
+    }));
+  }, []);
 
-  const handleResize = () => {
+  const handleSelectChat = useCallback((id) => {
+    navigate(`/chats/${id}`);
+  }, [navigate]);
+
+  const handleResize = useCallback(() => {
     setIsMobileView(window.innerWidth <= 768);
-  };
+  }, []);
 
-  useEffect(()=>{
-      const fetch_user_details = async () => {
-        try{
-          let response = await axiosInstance.get('/user/profile');
-          setProfile_details(Object(response.data))
-        }catch(e){
-          console.error(e)
-        }
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const response = await axiosInstance.get('/user/profile');
+        setProfileDetails(response.data);
+      } catch (error) {
+        console.error('Failed to fetch user details:', error);
       }
-      fetch_user_details()
-      window.addEventListener('resize', handleResize); // Listen for resize events
-      return () => window.removeEventListener('resize', handleResize); // Cleanup
-  },[])
+    };
 
-  // Function to handle selecting a chat from the chat list
-  const handleSelectChat = (id) => {
-    navigate(`/chats/${id}`); // Change the route to include chatId
-  };
+    fetchUserDetails();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [handleResize]);
 
   return (
     <>
@@ -62,52 +60,66 @@ const Layout = () => {
           <div className="options">
             <div><Settings /></div>
             <div><KeyRound /></div>
-            <div onClick={openProfile}>{ profile_details?.profile_url ? 
-                                          <img className="profile_photo" img src={profile_details?.profile_url} alt='profile' />
-                                          : <User />
-                                        }</div>
+            <div onClick={() => toggleDialog('isProfileOpen')}>
+              {profileDetails?.profile_url ? 
+                <img className="profile_photo" src={profileDetails.profile_url} alt='profile' />
+                : <User />
+              }
+            </div>
           </div>
         </div>
-        {console.log(isMobileView)}
-        { 
-          isMobileView ? 
-            
-              <>
-                 {userId ? 
-                  <ChatPage user_id={chatId} onCreateChat={openCreateDialog} onJoinChat={openJoinDialog} className="chatBox" />
-                  :
-                  <ChatsPage onSelectChat={handleSelectChat} className="chats" openProfile={openProfile} profile_details={profile_details} />}
-              </>     
-               : 
-              <>
-                <ChatsPage onSelectChat={handleSelectChat} className="chats" />
         
-                <ChatPage user_id={chatId} onCreateChat={openCreateDialog} onJoinChat={openJoinDialog} className="chatBox" />
-              </>
-        }
+        {isMobileView ? (
+          userId ? (
+            <ChatPage 
+              user_id={chatId} 
+              onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
+              onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
+              className="chatBox" 
+            />
+          ) : (
+            <ChatsPage 
+              onSelectChat={handleSelectChat} 
+              className="chats" 
+              openProfile={() => toggleDialog('isProfileOpen')} 
+              profile_details={profileDetails} 
+            />
+          )
+        ) : (
+          <>
+            <ChatsPage onSelectChat={handleSelectChat} className="chats" />
+            <ChatPage 
+              user_id={chatId} 
+              onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
+              onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
+              className="chatBox" 
+            />
+          </>
+        )}
       </div>
 
-      {/* Dialog Components */}
       <CreateChatDialog 
-      isOpen={isCreateDialogOpen} 
-      onClose={closeCreateDialog} />
-
-      <JoinChatDialog 
-      isOpen={isJoinDialogOpen} 
-      onClose={closeJoinDialog} 
-      onJoin={handleSelectChat} />
-
-      <EditProfileDialog 
-      isOpen={isEditProfileOpen} 
-      onClose={closeEditProfile}
-      initialData = {profile_details} />
-
-      <ProfilePage
-        isOpen={isProfileOpen}
-        onClose={closeProfile}
-        onEditProfile={openEditProfile}
+        isOpen={dialogStates.isCreateDialogOpen} 
+        onClose={() => toggleDialog('isCreateDialogOpen')} 
       />
 
+      <JoinChatDialog 
+        isOpen={dialogStates.isJoinDialogOpen} 
+        onClose={() => toggleDialog('isJoinDialogOpen')} 
+        onJoin={handleSelectChat} 
+      />
+
+      <EditProfileDialog 
+        isOpen={dialogStates.isEditProfileOpen} 
+        onClose={() => toggleDialog('isEditProfileOpen')}
+        initialData={profileDetails} 
+      />
+
+      <ProfilePage
+        isOpen={dialogStates.isProfileOpen}
+        onClose={() => toggleDialog('isProfileOpen')}
+        onEditProfile={() => toggleDialog('isEditProfileOpen')}
+      />
     </>
   );
 };
