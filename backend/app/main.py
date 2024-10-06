@@ -9,12 +9,13 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",  # Replace with your frontend URL
     "https://secrete-chat.vercel.app",
-    "https://secrete-chat-mrd0511s-projects.vercel.app"
+    "https://secrete-chat-mrd0511s-projects.vercel.app",
+    "0.0.0.0"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],  # Or specify the methods you want to allow
     allow_headers=["*"],  # Or specify the headers you want to allow
