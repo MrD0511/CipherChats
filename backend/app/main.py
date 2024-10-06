@@ -8,7 +8,8 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",  # Replace with your frontend URL
-    "https://secrete-chat.vercel.app"
+    "https://secrete-chat.vercel.app",
+    "https://secrete-chat-mrd0511s-projects.vercel.app"
 ]
 
 app.add_middleware(
