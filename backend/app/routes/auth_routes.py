@@ -12,7 +12,7 @@ messages_collection = get_collection('messages')
 
 @router.post('/auth/signup', response_model=Token)
 async def signup(user: UserModel):
-    try:
+    # try:
         user_dict = user.dict()
         user_collection = get_collection('user')
         existing_user  = await user_collection.find_one({ 'email' : user_dict['email']})
@@ -28,9 +28,9 @@ async def signup(user: UserModel):
         access_token = user_auth_services.create_access_token({ 'sub' : str(user_dict['_id'])})
         return {"access_token": access_token, "token_type": "bearer"}
     
-    except Exception as e:
-        print(e)
-        return {"message" : "error"}
+    # except Exception as e:
+    #     print(e)
+    #     return {"message" : "error"}
         
 @router.post('/auth/signin', response_model=Token)
 async def signin(user : SignInModel):
