@@ -29,12 +29,9 @@ class connection_manager:
         })
 
     async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
-        print(message, sender_id, recipient_id, "send")
         if recipient_id in self.active_connections:
             recipient_socket = self.active_connections[recipient_id]
             await recipient_socket.send_json(message)
-        else:
-            sender_socket = self.active_connections[sender_id]
 
 manager = connection_manager()
 
@@ -45,21 +42,23 @@ async def chat_websocket(websocket : WebSocket):
     user = await user_auth_services.get_current_user(token)
     await manager.connect(websocket, user['sub'])
     try:
-        print("hi2")
         while True:
             data = await websocket.receive_text()
             data = json.loads(data)
             
-            messages_collection.insert_one({
-                "sender_id" : ObjectId(user['sub']),
-                "recipient_id" : ObjectId(data['recipient_id']),
-                "message" : data['message'],
-                "time_stamp" : datetime.now(),
-                "type" : "user"
-            })
+            if data.get('message'):
+                await messages_collection.insert_one({
+                    "sender_id" : ObjectId(user['sub']),
+                    "recipient_id" : ObjectId(data['recipient_id']),
+                    "message" : data['message'],
+                    "time_stamp" : datetime.now(),
+                    "type" : "user"
+                })
+                
+                await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
             
-            await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
-            
+            elif data.get('event'):
+                await manager.send_message_to_user({"event" : "typing"}, user['sub'], data['recipient_id'])
     except Exception as err:
         print(err)
         # manager.disconnect(username)
