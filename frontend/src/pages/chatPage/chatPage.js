@@ -32,11 +32,23 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         if (userId) {
             fetchDetails()
         }
+<<<<<<< HEAD
         if(socket){
             socket.onmessage = (event) => {
                 const receivedMessage = JSON.parse(event.data);
                 setMessages(messages => [...messages, receivedMessage])
             }
+=======
+
+        const token = localStorage.getItem('access_token')
+        const socket = new WebSocket(`wss://kychat.onrender.com/ws/chat?token=${token}`)
+        setWs(socket)
+
+        socket.onopen = () => console.log("WebSocket connected")
+        socket.onmessage = (event) => {
+            const receivedMessage = JSON.parse(event.data);
+            setMessages(messages => [...messages, receivedMessage])
+>>>>>>> 6a3a108a9301f45a08efb01dd9c1c9f0b489d0bf
         }
         
     }, [userId])
