@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./SignUp.scss";
 import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +43,6 @@ const Signup = () => {
   };
 
   const validateUsername = async (username) => {
-    console.log(username.length)
     if (!username.trim()) {
       setUsernameError('Required');
     } else if (username.length < 3) {
@@ -94,7 +93,6 @@ const Signup = () => {
       setPasswordError("Password required");
       setConfirmPasswordError("Please confirm your password");
     } else {
-      console.log("Signing up:", { name, email, password });
       try{
         setLoading(true)
         const response = await axiosInstance.post('/auth/signup',{

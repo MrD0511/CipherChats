@@ -41,7 +41,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             }
         }
         
-    }, [userId])
+    }, [userId, socket])
 
     useEffect(() => {
         if (chatBoxRef.current) {
