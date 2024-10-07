@@ -13,7 +13,7 @@ $border-radius: 8px;
   flex-direction: column;
   height: 100vh; // Full screen height
   background-color: $background-color;
-  padding: 1rem; // Padding for smaller screens
+  padding: 0.5rem; // Padding for smaller screens
 
   .brand-name {
     margin-top: 2.5rem;
@@ -37,13 +37,12 @@ $border-radius: 8px;
   .login-form {
     z-index: 1;
     background-color: $input-background;
-    padding: 2.5rem;
     border-radius: $border-radius;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-    width: 100%; // Full width for smaller screens
+    // width: 100%; // Full width for smaller screens
     max-width: 350px; // Limit max width on larger screens
     text-align: center;
-    margin: 50px auto; // Center the form
+    padding: 1.5rem;
 
     h2 {
       margin-bottom: 2rem;
@@ -154,8 +153,13 @@ $border-radius: 8px;
 @media (max-width: 600px) {
   .login-form {
     padding: 1.5rem; // Reduce padding on smaller screens
-    margin: 20px; // Reduce margin for mobile view
-    width: 90%; // Ensure width adapts to smaller screens
+    margin: 10px; // Reduce margin for mobile view
+    width: unset; // Ensure width adapts to smaller screens
+  }
+}
+@media (min-width : 600px) {
+  .login-form{
+    width: 100%;
   }
 }
 

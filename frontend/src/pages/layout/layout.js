@@ -31,9 +31,6 @@ const Layout = () => {
     } 
   })
 
-
-
-
   const toggleDialog = useCallback((dialogName) => {
     setDialogStates(prevState => ({
       ...prevState,
@@ -72,7 +69,6 @@ const Layout = () => {
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize)
-      // socket.close()
     };
   }, [handleResize]);
 
@@ -110,14 +106,19 @@ const Layout = () => {
                 onSelectChat={handleSelectChat} 
                 className="chats" 
                 openProfile={() => toggleDialog('isProfileOpen')} 
-                profile_details={profileDetails} 
+                profile_details={profileDetails}
+                onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
+                onJoinChat={() => toggleDialog('isJoinDialogOpen')}  
               />
               <Outlet />
             </div>
           )
         ) : (
           <>
-            <ChatsPage onSelectChat={handleSelectChat} className="chats" />
+            <ChatsPage 
+            onSelectChat={handleSelectChat} 
+            className="chats"
+            />
             <ChatPage 
               user_id={chatId} 
               onCreateChat={() => toggleDialog('isCreateDialogOpen')} 

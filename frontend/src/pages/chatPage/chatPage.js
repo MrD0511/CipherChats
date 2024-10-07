@@ -14,6 +14,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     const fileInputRef = useRef(null);
     const [sender_details, setSender_details] = useState(null)
     const { userId } = useParams();
+    let typingTimeout;
 
     useEffect(() => {
         if (textAreaRef.current) {
@@ -32,23 +33,12 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         if (userId) {
             fetchDetails()
         }
-<<<<<<< HEAD
+
         if(socket){
             socket.onmessage = (event) => {
                 const receivedMessage = JSON.parse(event.data);
                 setMessages(messages => [...messages, receivedMessage])
             }
-=======
-
-        const token = localStorage.getItem('access_token')
-        const socket = new WebSocket(`wss://kychat.onrender.com/ws/chat?token=${token}`)
-        setWs(socket)
-
-        socket.onopen = () => console.log("WebSocket connected")
-        socket.onmessage = (event) => {
-            const receivedMessage = JSON.parse(event.data);
-            setMessages(messages => [...messages, receivedMessage])
->>>>>>> 6a3a108a9301f45a08efb01dd9c1c9f0b489d0bf
         }
         
     }, [userId])
@@ -76,6 +66,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                 }
             }
             socket.send(JSON.stringify(message))
+            
             setMessages([...messages, message]);
             setInputValue('');
             setImageFile(null);
@@ -114,6 +105,15 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         </>
     );
 
+    const isTyping = () => {
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            if(socket){
+                socket.send(JSON.stringify({ event: "typing", recipient_id: userId}));
+            }
+        }, 1000); // Send typing event after 1s of inactivity
+    }
+
     return userId != null ? (
         <div className="chat-container">
             <div className='sender'>
@@ -145,7 +145,10 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                 <textarea
                     ref={textAreaRef}
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                        setInputValue(e.target.value)
+                        isTyping()
+                    }}
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message..."
                     rows={1}
