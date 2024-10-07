@@ -17,7 +17,7 @@ const Layout = () => {
     isEditProfileOpen: false,
     isProfileOpen: false
   });
-  const websocket_url = process.env.REACT_APP_WEBSOCKET_URL
+  
   const [profileDetails, setProfileDetails] = useState(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
   const [ws, setWs] = useState(null)
@@ -57,6 +57,7 @@ const Layout = () => {
       }
     };
 
+    const websocket_url = process.env.REACT_APP_WEBSOCKET_URL
     const token = localStorage.getItem('access_token')
     const socket = new WebSocket(`${websocket_url}/ws/chat?token=${token}`)
     setWs(socket)
