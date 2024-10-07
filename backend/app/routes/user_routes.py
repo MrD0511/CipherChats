@@ -54,7 +54,7 @@ async def edit_profile(username: str = Form(...),
         raise HTTPException(status_code=500, detail="Internal Server Error")
     
 @router.get('/user/check_username/{username}')
-async def check_username(username : str, user : Optional[dict] = Depends(user_auth_services.get_current_user)):
+async def check_username(username : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
         username_exists = await user_collection.find_one({ "username" : username}, {"_id" : 1})
         if username_exists and str(username_exists['_id']) is not user['sub']:

@@ -4,14 +4,14 @@ import axiosInstance from "../../axiosInstance"
 import { useParams,Link } from 'react-router-dom'
 import { User, Image as ImageIcon, Send, ArrowLeft, EllipsisVertical } from 'lucide-react'
 
-const ChatPage = ({onCreateChat, onJoinChat}) => {
+const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
+    
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const textAreaRef = useRef(null);
     const chatBoxRef = useRef(null);
     const fileInputRef = useRef(null);
-    const [ws, setWs] = useState(null)
     const [sender_details, setSender_details] = useState(null)
     const { userId } = useParams();
 
@@ -32,19 +32,13 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
         if (userId) {
             fetchDetails()
         }
-
-        const token = localStorage.getItem('access_token')
-        const socket = new WebSocket(`ws://kychat.onrender.com/ws/chat?token=${token}`)
-        setWs(socket)
-
-        socket.onopen = () => console.log("WebSocket connected")
-        socket.onmessage = (event) => {
-            const receivedMessage = JSON.parse(event.data);
-            setMessages(messages => [...messages, receivedMessage])
+        if(socket){
+            socket.onmessage = (event) => {
+                const receivedMessage = JSON.parse(event.data);
+                setMessages(messages => [...messages, receivedMessage])
+            }
         }
-        socket.onclose = () => console.log("WebSocket disconnected");
-
-        return () => socket.close();
+        
     }, [userId])
 
     useEffect(() => {
@@ -54,7 +48,7 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
     }, [messages]);
 
     const handleMessage = async () => {
-        if ((inputValue.trim() || imageFile) && ws) {
+        if ((inputValue.trim() || imageFile) && socket) {
             let message = { message: inputValue, recipient_id: userId };
 
             if (imageFile) {
@@ -69,8 +63,7 @@ const ChatPage = ({onCreateChat, onJoinChat}) => {
                     return;
                 }
             }
-
-            ws.send(JSON.stringify(message))
+            socket.send(JSON.stringify(message))
             setMessages([...messages, message]);
             setInputValue('');
             setImageFile(null);

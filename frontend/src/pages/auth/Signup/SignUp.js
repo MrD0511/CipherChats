@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./SignUp.scss";
 import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from "react-router-dom";
@@ -6,13 +6,18 @@ import { useNavigate } from "react-router-dom";
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username,setUsername] = useState("")
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [usernameError, setUsernameError] = useState("")
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [errorMsg , setErrorMsg] = useState("")
+  const [loading, setLoading] = useState(false)
+  
   const navigate = useNavigate()
+
   const validateEmail = (email) => {
     if (email === "") {
       setEmailError("Email required");
@@ -25,6 +30,34 @@ const Signup = () => {
       setEmailError("");
     }
   };
+
+  const check_username_availbility = async (username) => {
+    try {
+      const response = await axiosInstance.get(`/auth/check_username/${username}`);
+      if (response.status === 200) {  // Corrected this part
+        return true;
+      }
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const validateUsername = async (username) => {
+    console.log(username.length)
+    if (!username.trim()) {
+      setUsernameError('Required');
+    } else if (username.length < 3) {
+      setUsernameError('Min 3 characters');
+    } else {
+      // Await for the async username validation here
+      const usernameAvailable = await check_username_availbility(username);
+      if (!usernameAvailable) {
+        setUsernameError('Username unavailable');
+      }else{
+        setUsernameError("")
+      }
+    }
+  }
 
   const validatePassword = (password) => {
     if (password === "") {
@@ -63,6 +96,7 @@ const Signup = () => {
     } else {
       console.log("Signing up:", { name, email, password });
       try{
+        setLoading(true)
         const response = await axiosInstance.post('/auth/signup',{
           "username" : name,
           "password" : password,
@@ -72,6 +106,7 @@ const Signup = () => {
         localStorage.setItem('access_token',response.data.access_token)
         navigate('/')
       }catch(error){
+          setLoading(false)
           if (error.response) {
             setErrorMsg(error.response.data.detail || 'An error occurred');
           } else {
@@ -83,9 +118,13 @@ const Signup = () => {
 
   return (
     <div className="signup-container">
+      <div className='brand-name'>
+        <span className="cipher">Cipher</span>
+        <span className="chat">Chat</span>
+      </div>
       <form className="signup-form" onSubmit={handleSubmit}>
         <h2>Sign Up</h2>
-        <div>{errorMsg}</div>
+        <div className="error">{errorMsg}</div>
         <div className="form-group">
           <label>Name</label>
           <input
@@ -108,6 +147,20 @@ const Signup = () => {
             className={emailError && "errorField"}
           />
           {emailError && <span className="error">{emailError}</span>}
+        </div>
+        <div className="form-group">
+            <label >Username</label>
+            <input
+            type="text"
+            placeholder="Enter a username"
+            value = {username}
+            onChange={ (e) => {
+              setUsername(e.target.value);
+              validateUsername(e.target.value);
+            }}
+            className={usernameError && "errorField"}
+            />
+            {usernameError && <span className="error">{usernameError}</span>}
         </div>
         <div className="form-group">
           <label>Password</label>
@@ -139,7 +192,9 @@ const Signup = () => {
             <span className="error">{confirmPasswordError}</span>
           )}
         </div>
-        <button type="submit">Sign Up</button>
+        <button type="submit" disabled={loading} >
+          {loading ? "Signing Up ..." : "Sign Up"}
+        </button>
 
         <div className="links">
           <a href='/signin' className="signup-link">

@@ -9,6 +9,8 @@ const Login = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [errorMsg , setErrorMsg] = useState("")
+  const [loading, setLoading] = useState(false)
+
   const navigate = useNavigate()
 
   const validateEmail = (email) => {
@@ -37,6 +39,7 @@ const Login = () => {
       setPasswordError("Password required");
     } else {
       try{
+        setLoading(true)
         const response = await axiosInstance.post('/auth/signin',{
           "identifier" : email,
           "password" : password
@@ -44,6 +47,7 @@ const Login = () => {
         localStorage.setItem('access_token',response.data.access_token)
         navigate('/')
       }catch(error){
+          setLoading(false)
           if (error.response) {
             setErrorMsg(error.response.data.detail || 'An error occurred');
           } else {
@@ -55,6 +59,10 @@ const Login = () => {
 
   return (
     <div className="login-container">
+      <div className='brand-name'>
+        <span className="cipher">Cipher</span>
+        <span className="chat">Chat</span>
+      </div>
       <form className="login-form" onSubmit={handleSubmit}>
         <h2>Login</h2>
         {errorMsg && <p className="error">{errorMsg}</p>}
@@ -86,7 +94,8 @@ const Login = () => {
           />
           {passwordError && <span className="error">{passwordError}</span>}
         </div>
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading} >
+          {loading ? "Signing In..." : "Sign In" }</button>
 
         <div className="links">
           <a href="/" className="forgot-password">

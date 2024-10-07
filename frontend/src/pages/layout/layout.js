@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import ChatPage from '../chatPage/chatPage.js';
 import ChatsPage from '../chats/chatsPage.js';
 import './layout.scss';
@@ -17,9 +17,10 @@ const Layout = () => {
     isEditProfileOpen: false,
     isProfileOpen: false
   });
+  const websocket_url = process.env.REACT_APP_WEBSOCKET_URL
   const [profileDetails, setProfileDetails] = useState(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-  
+  const [ws, setWs] = useState(null)
   const { chatId, userId } = useParams();
   const navigate = useNavigate();
 
@@ -29,6 +30,8 @@ const Layout = () => {
       navigate('/signin')
     } 
   })
+
+
 
 
   const toggleDialog = useCallback((dialogName) => {
@@ -57,9 +60,20 @@ const Layout = () => {
       }
     };
 
+    const token = localStorage.getItem('access_token')
+    const socket = new WebSocket(`${websocket_url}/ws/chat?token=${token}`)
+    setWs(socket)
+
+    socket.onopen = () => console.log("WebSocket connected")
+
+    socket.onclose = () => console.log("WebSocket disconnected");
+    
     fetchUserDetails();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      // socket.close()
+    };
   }, [handleResize]);
 
   return (
@@ -80,19 +94,26 @@ const Layout = () => {
         
         {isMobileView ? (
           userId ? (
-            <ChatPage 
-              user_id={chatId} 
-              onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
-              onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
-              className="chatBox" 
-            />
+            <div className='mobile-view'>
+              <ChatPage 
+                user_id={chatId} 
+                onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
+                onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
+                className="chatBox" 
+                socket={ws}
+              />
+              <Outlet />
+            </div>
           ) : (
-            <ChatsPage 
-              onSelectChat={handleSelectChat} 
-              className="chats" 
-              openProfile={() => toggleDialog('isProfileOpen')} 
-              profile_details={profileDetails} 
-            />
+            <div className='mobile-view'>
+              <ChatsPage 
+                onSelectChat={handleSelectChat} 
+                className="chats" 
+                openProfile={() => toggleDialog('isProfileOpen')} 
+                profile_details={profileDetails} 
+              />
+              <Outlet />
+            </div>
           )
         ) : (
           <>
@@ -102,6 +123,7 @@ const Layout = () => {
               onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
               onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
               className="chatBox" 
+              socket={ws}
             />
           </>
         )}

@@ -1,5 +1,6 @@
 $primary-color: #8a2be2; // Purple accent color
 $background-color: #000000; // Dark background
+$secondary-color: #4a90e2; // Blue color for "Chat"
 $input-background: #0f131e; // Slightly lighter than background
 $error-color: #e74c3c; // Red for error messages
 $text-color: #e1e1e1; // Light text color
@@ -8,10 +9,29 @@ $border-radius: 8px;
 .signup-container {
   display: flex;
   justify-content: center;
+  flex-direction: column;
   align-items: center;
-  height: 100vh; // Full screen height
   background-color: $background-color;
   padding: 1rem; // Padding for smaller screens
+
+  .brand-name {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    font-size: 2.5rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    z-index: 2;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    .cipher {
+      color: $primary-color;
+      animation: scramble 5s infinite;
+    }
+
+    .chat {
+      color: $secondary-color;
+      animation: float 3s ease-in-out infinite;
+    }
+  }
 
   .signup-form {
     z-index: 1;
@@ -30,6 +50,11 @@ $border-radius: 8px;
       color: $primary-color;
       font-weight: bold;
       letter-spacing: 1px;
+    }
+    .error {
+      color: $error-color;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
     }
 
     .form-group {
@@ -91,6 +116,12 @@ $border-radius: 8px;
       &:active {
         transform: translateY(1px);
       }
+
+      &:disabled {
+        background-color: lighten($primary-color, 20%);
+        cursor: not-allowed;
+        transform: none;
+      }
     }
 
     .links {
@@ -141,6 +172,20 @@ $border-radius: 8px;
   h2 {
     font-size: 1.5rem; // Adjust font size for headings on smaller screens
   }
+}
+
+@keyframes scramble {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+  25%, 75% { 
+    opacity: 0.9;
+    transform: skew(-5deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 @keyframes twinkle {

@@ -23,7 +23,10 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile }) => {
   return (
     <div className="main">
       <header className="header">
-        <h1 className="website-logo">KyChat</h1>
+        <div className='brand-name'>
+          <span className="cipher">Cipher</span>
+          <span className="chat">Chat</span>
+        </div>
         <div className="options" onClick={openProfile}>
           {profile_details?.profile_url ? (
             <img

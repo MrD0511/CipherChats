@@ -57,3 +57,15 @@ async def signin(user : SignInModel):
     except Exception as e:
         print("signin : ", e)
         raise HTTPException(status_code=500, detail="Internal server error")  # Raise an HTTPException for consistency
+
+@router.get('/auth/check_username/{username}')
+async def check_username(username : str):
+    try:
+        username_exists = await user_collection.find_one({ "username" : username}, {"_id" : 1})
+        if username_exists:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        return { "msg" :"Username available" }
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server Error")
