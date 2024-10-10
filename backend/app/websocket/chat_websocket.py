@@ -47,14 +47,6 @@ async def chat_websocket(websocket : WebSocket):
             data = json.loads(data)
             
             if data.get('message'):
-                await messages_collection.insert_one({
-                    "sender_id" : ObjectId(user['sub']),
-                    "recipient_id" : ObjectId(data['recipient_id']),
-                    "message" : data['message'],
-                    "time_stamp" : datetime.now(),
-                    "type" : "user"
-                })
-                
                 await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
             
             elif data.get('event'):

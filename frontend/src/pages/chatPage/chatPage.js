@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance" 
-import { useParams,Link } from 'react-router-dom'
+import { useParams,Link, useNavigate } from 'react-router-dom'
 import { User, Image as ImageIcon, Send, ArrowLeft, EllipsisVertical } from 'lucide-react'
+import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from '../../e2eeManager';
+
 
 const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     
@@ -15,6 +17,10 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     const [sender_details, setSender_details] = useState(null)
     const { userId } = useParams();
     let typingTimeout;
+    const navigate = useNavigate();
+    const partner_public_key = useRef(null);
+    const user_private_key = useRef(null);
+    const [channel_id, setChannel_id] = useState('');
 
     useEffect(() => {
         if (textAreaRef.current) {
@@ -25,23 +31,61 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
 
     useEffect(() => {
         const fetchDetails = async () => {
-            const response = await axiosInstance.get(`/chat/get_chat/${userId}`);
-            setSender_details(response.data?.sender_details)
-            setMessages(response.data?.chat)
+            try{
+                const response = await axiosInstance.get(`/chat/get_chat/${userId}`);
+                setSender_details(response.data?.sender_details)
+                setChannel_id(response.data?.channel_id)
+            }catch(e){
+                if(e.response.status === 404){
+                    navigate("/404notFound")
+                }
+                navigate('/')
+            }
         }
 
         if (userId) {
             fetchDetails()
         }
 
+    }, [userId, navigate])
+
+    useEffect(()=>{
+        const initialize_encryption = async () => {
+            const connection_keys = await get_connection_keys(channel_id, userId)
+            if(connection_keys){
+                partner_public_key.current = connection_keys.partnerPublicKey
+                user_private_key.current = connection_keys.privateKey
+            }else{
+                user_private_key.current = create_new_connection(channel_id)
+            }
+        }
+        if(channel_id && userId){
+            initialize_encryption()
+        }
+    },[channel_id, userId])
+
+    useEffect(() => {
+
+    }, [user_private_key]);
+
+    const handleIncomingMessages = async (receivedMessage) => {
+        receivedMessage.message = await decrypt_message(user_private_key.current, receivedMessage.message)
+        setMessages(messages => [...messages, receivedMessage])
+    }
+
+    useEffect(()=>{
         if(socket){
             socket.onmessage = (event) => {
                 const receivedMessage = JSON.parse(event.data);
-                setMessages(messages => [...messages, receivedMessage])
+                if(receivedMessage.message){
+                    handleIncomingMessages(receivedMessage)
+                }
+                else if(receivedMessage.event){
+                    console.log(receivedMessage.event)
+                }
             }
         }
-        
-    }, [userId, socket])
+    },[socket])
 
     useEffect(() => {
         if (chatBoxRef.current) {
@@ -51,6 +95,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
 
     const handleMessage = async () => {
         if ((inputValue.trim() || imageFile) && socket) {
+            
             let message = { message: inputValue, recipient_id: userId };
 
             if (imageFile) {
@@ -65,9 +110,12 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                     return;
                 }
             }
-            socket.send(JSON.stringify(message))
             
             setMessages([...messages, message]);
+
+            const encryptedMessage = await encrypt_message(partner_public_key.current, message.message) 
+            console.log(encryptedMessage)
+            socket.send(JSON.stringify({ message : encryptedMessage, recipient_id : message.recipient_id }))
             setInputValue('');
             setImageFile(null);
         }
@@ -109,9 +157,9 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {
             if(socket){
-                socket.send(JSON.stringify({ event: "typing", recipient_id: userId}));
+                // socket.send(JSON.stringify({ event: "typing", recipient_id: userId}));
             }
-        }, 1000); // Send typing event after 1s of inactivity
+        }, 2000); // Send typing event after 1s of inactivity
     }
 
     return userId != null ? (

@@ -60,6 +60,7 @@ const Layout = () => {
     const websocket_url = process.env.REACT_APP_WEBSOCKET_URL
     const token = localStorage.getItem('access_token')
     const socket = new WebSocket(`${websocket_url}/ws/chat?token=${token}`)
+    // const socket = new WebSocket(`wss://cipherchats.duckdns.org/ws/chat?token=${token}`)
     setWs(socket)
 
     socket.onopen = () => console.log("WebSocket connected")

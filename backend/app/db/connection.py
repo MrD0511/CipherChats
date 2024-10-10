@@ -14,7 +14,7 @@ try:
 except Exception as e:
     print(e)
 
-db = client['chatapp']
+db = client['cipherchat']
 
 def get_collection(collection):
     return db[collection]

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './create_chat.scss';
 import axiosInstance from '../../axiosInstance';
+import { create_new_connection } from '../../e2eeManager';
 
 const CreateChatDialog = ({ isOpen, onClose, onConfirm }) => {
     const [generatedKey, setGeneratedKey] = useState('');
@@ -22,6 +23,7 @@ const CreateChatDialog = ({ isOpen, onClose, onConfirm }) => {
         try {
             const response = await axiosInstance.get('/chat/create');
             setGeneratedKey(response.data.key); // Assuming the response contains a key field
+            await create_new_connection(response.data.channel_id)
         } catch (error) {
             console.error('Error generating key:', error);
         }

@@ -116,10 +116,10 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile,onCreateChat, on
                   <strong>{chat.partner_details?.name}</strong>
                 </div>
                 <div className="chat-message-box">
-                  <span className="chat-message">
+{/* {                  <span className="chat-message">
                     {String(chat.latest_message?.message)}
-                  </span>
-                  <span className="chat-time">{formatTime(chat.latest_message?.time_stamp?.$date)}</span>
+                  </span>} */}
+                  {/* {<span className="chat-time">{formatTime(chat.latest_message?.time_stamp?.$date)}</span>} */}
                 </div>
               </div>
             </div>
