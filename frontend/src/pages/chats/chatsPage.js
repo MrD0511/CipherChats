@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import '../chats/chatsPage.scss';
 import axiosInstance from '../../axiosInstance';
 import { User, Search, MessageSquarePlus, UserPlus, Plus } from 'lucide-react';
-import { format } from "date-fns";
+// import { format } from "date-fns";
 
 const ChatsPage = ({ onSelectChat, profile_details, openProfile,onCreateChat, onJoinChat }) => {
   const [chats, setChats] = useState([]);
@@ -10,29 +10,29 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile,onCreateChat, on
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
-  const formatTime = (timestamp) => {
-    const messageDate = new Date(timestamp);
-    const now = new Date();
+  // const formatTime = (timestamp) => {
+  //   const messageDate = new Date(timestamp);
+  //   const now = new Date();
   
-    const isToday =
-      now.getDate() === messageDate.getDate() &&
-      now.getMonth() === messageDate.getMonth() &&
-      now.getFullYear() === messageDate.getFullYear();
+  //   const isToday =
+  //     now.getDate() === messageDate.getDate() &&
+  //     now.getMonth() === messageDate.getMonth() &&
+  //     now.getFullYear() === messageDate.getFullYear();
   
-    const isThisWeek =
-      messageDate > new Date(now.setDate(now.getDate() - 7)) && messageDate <= new Date();
+  //   const isThisWeek =
+  //     messageDate > new Date(now.setDate(now.getDate() - 7)) && messageDate <= new Date();
   
-    if (isToday) {
-      // Show time if it's today
-      return format(messageDate, "HH:mm");
-    } else if (isThisWeek) {
-      // Show day if it's this week
-      return format(messageDate, "EEEE"); // Example: Monday
-    } else {
-      // Show date if it's older than this week
-      return format(messageDate, "dd/MM/yyyy");
-    }
-  };
+  //   if (isToday) {
+  //     // Show time if it's today
+  //     return format(messageDate, "HH:mm");
+  //   } else if (isThisWeek) {
+  //     // Show day if it's this week
+  //     return format(messageDate, "EEEE"); // Example: Monday
+  //   } else {
+  //     // Show date if it's older than this week
+  //     return format(messageDate, "dd/MM/yyyy");
+  //   }
+  // };
 
   useEffect(() => {
     const fetchChats = async () => {

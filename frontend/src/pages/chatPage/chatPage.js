@@ -16,11 +16,13 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     const fileInputRef = useRef(null);
     const [sender_details, setSender_details] = useState(null)
     const { userId } = useParams();
-    let typingTimeout;
+    const typingTimeout = useRef(null);
     const navigate = useNavigate();
     const partner_public_key = useRef(null);
     const user_private_key = useRef(null);
     const [channel_id, setChannel_id] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [recipientTyping, setRecipientTyping] = useState(false);
 
     useEffect(() => {
         if (textAreaRef.current) {
@@ -81,7 +83,11 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                     handleIncomingMessages(receivedMessage)
                 }
                 else if(receivedMessage.event){
-                    console.log(receivedMessage.event)
+                    if(receivedMessage.event === "typing"){
+                        setRecipientTyping(true)
+                    }else{
+                        setRecipientTyping(false)
+                    }
                 }
             }
         }
@@ -113,9 +119,16 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             
             setMessages([...messages, message]);
 
-            const encryptedMessage = await encrypt_message(partner_public_key.current, message.message) 
-            console.log(encryptedMessage)
-            socket.send(JSON.stringify({ message : encryptedMessage, recipient_id : message.recipient_id }))
+            socket.send(JSON.stringify({ event : "stop_typing", recipient_id : userId}))
+            
+            try {
+                const encryptedMessage = await encrypt_message(partner_public_key.current, message.message); 
+                socket.send(JSON.stringify({ message: encryptedMessage, recipient_id: message.recipient_id }));
+            } catch (error) {
+                console.error('Error encrypting message:', error);
+                alert('Failed to send message. Please try again.'); // User feedback
+                return;
+            }
             setInputValue('');
             setImageFile(null);
         }
@@ -153,11 +166,21 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         </>
     );
 
-    const isTyping = () => {
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
+    const userTyping = () => {
+        if(!isTyping && socket){
+            setIsTyping(true)
+            socket.send(JSON.stringify({ event: "typing", recipient_id: userId}));
+        }
+
+        if(typingTimeout.current){
+            clearTimeout(typingTimeout.current);
+        }
+        
+        typingTimeout.current = setTimeout(() => {
+            setIsTyping(false)
+            console.log("here")
             if(socket){
-                // socket.send(JSON.stringify({ event: "typing", recipient_id: userId}));
+                socket.send(JSON.stringify({ event : "stop_typing" , recipient_id : userId }))
             }
         }, 2000); // Send typing event after 1s of inactivity
     }
@@ -166,7 +189,9 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         <div className="chat-container">
             <div className='sender'>
                 <div className='details' >
-                    <Link to='/' className='back-button'>
+                    <Link to='/' className='back-button' onClick={()=>{
+                        setInputValue("")
+                    }}>
                         <ArrowLeft />
                     </Link>
                     {sender_details?.profile_photo_url ? 
@@ -188,6 +213,11 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                         </div>
                     </div>
                 ))}
+                {recipientTyping && (
+                    <div className="messageSender typing-indicator">
+                        typing...
+                    </div> 
+                )}
             </div>
             <div className="chat-input">
                 <textarea
@@ -195,7 +225,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                     value={inputValue}
                     onChange={(e) => {
                         setInputValue(e.target.value)
-                        isTyping()
+                        userTyping()
                     }}
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message..."

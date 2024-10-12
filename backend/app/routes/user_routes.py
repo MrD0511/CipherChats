@@ -5,6 +5,7 @@ from ..services import user_auth_services
 from typing import Optional
 from ..services import  user_auth_services
 from ..firebase_utils import upload_file_to_firebase, delete_file_from_firebase
+from bson import ObjectId
 
 router = APIRouter()
 
@@ -56,13 +57,14 @@ async def edit_profile(username: str = Form(...),
 @router.get('/user/check_username/{username}')
 async def check_username(username : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        username_exists = await user_collection.find_one({ "username" : username}, {"_id" : 1})
+        username_exists = await user_collection.find_one({ "username" : username , "_id" : {"$ne" : ObjectId(user['sub'])}}, {"_id" : 1})
         if username_exists and str(username_exists['_id']) is not user['sub']:
             raise HTTPException(status_code=400, detail="Username already exists")
         return { "msg" :"Username available" }
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
+        print("check user username: ", e)
         raise HTTPException(status_code=500, detail="Internal server Error")
 
 @router.get('/user/profile')

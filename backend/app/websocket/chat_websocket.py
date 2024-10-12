@@ -50,7 +50,7 @@ async def chat_websocket(websocket : WebSocket):
                 await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
             
             elif data.get('event'):
-                await manager.send_message_to_user({"event" : "typing"}, user['sub'], data['recipient_id'])
+                await manager.send_message_to_user({ "event" : data.get("event"), "sender_id" : user['sub'] }  , user['sub'], data['recipient_id'])
     except Exception as err:
         print(err)
         # manager.disconnect(username)

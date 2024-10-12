@@ -8,6 +8,7 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
     username: '',
     name: '',
     profile_photo: null,
+    profile_photo_preview: '/default-avatar.png', // Default avatar for preview
   });
   const [errors, setErrors] = useState({});
 
@@ -16,7 +17,8 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
       setFormData({
         username: initialData?.username,
         name: initialData?.name,
-        profile_photo: initialData?.profile_url,
+        profile_photo: null,
+        profile_photo_preview: initialData?.profile_url || '/default-avatar.png',
       });
     }
   }, [initialData]);
@@ -24,7 +26,7 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
   const validate_username = async (username) => {
     try {
       const response = await axiosInstance.get(`/user/check_username/${username}`);
-      if (response.status === 200) {  // Corrected this part
+      if (response.status === 200) {
         return true;
       }
     } catch (error) {
@@ -40,7 +42,6 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
     } else if (formData.username.length < 3) {
       newErrors.username = 'Min 3 characters';
     } else {
-      // Await for the async username validation here
       const usernameAvailable = await validate_username(formData.username);
       if (!usernameAvailable) {
         newErrors.username = 'Username unavailable';
@@ -69,24 +70,28 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
       setFormData((prevData) => ({
         ...prevData,
         profile_photo: file,
+        profile_photo_preview: URL.createObjectURL(file), // This will generate a preview
       }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const isValid = await validateForm();  // Await here for async validation
+    const isValid = await validateForm();
     if (isValid) {
-      const form_data = new FormData()
-      form_data.append("username", formData.username)
-      form_data.append("name", formData.name)
-      form_data.append("profile_photo", formData.profile_photo)
-      const response = await axiosInstance.post('/user/profile/edit',form_data, {
+      const form_data = new FormData();
+      form_data.append("username", formData.username);
+      form_data.append("name", formData.name);
+      console.log(formData)
+      if (formData.profile_photo) {
+        form_data.append("profile_photo", formData.profile_photo); // Only append if a new photo is selected
+      }
+      const response = await axiosInstance.post('/user/profile/edit', form_data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      }) 
-      if(response.status === 200){
+      });
+      if (response.status === 200) {
         onClose();
       }
     }
@@ -101,10 +106,10 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
           <X size={18} />
         </button>
         <h2>Edit Profile</h2>
-        <form onSubmit={handleSubmit} encType='multipart/form-data'>
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="avatar-section">
             <img
-              src={formData.profile_photo || '/default-avatar.png'}
+              src={formData.profile_photo_preview} // Use the preview URL here
               alt="Profile"
               className="current-avatar"
             />
@@ -117,7 +122,6 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
                 accept="image/*"
                 onChange={handleAvatarChange}
                 style={{ display: 'none' }}
-              
               />
             </label>
           </div>
