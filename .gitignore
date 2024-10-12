@@ -7,6 +7,10 @@ backend/app/__pycache__
 backend/app/db/__pycache__
 backend/app/models/__pycache__
 backend/app/services/__pycache__
+backend/__pycache__
+backend/app/routes/__pycache__
+backend/app/websocket/__pycache__
+
 # testing
 /coverage
 
