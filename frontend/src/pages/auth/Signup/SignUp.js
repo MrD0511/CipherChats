@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "./SignUp.scss";
 import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from "react-router-dom";
+import { FcGoogle } from 'react-icons/fc'; // Import Google icon
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -192,6 +193,15 @@ const Signup = () => {
         </div>
         <button type="submit" disabled={loading} >
           {loading ? "Signing Up ..." : "Sign Up"}
+        </button>
+
+        <div className="separator">
+          <span>or</span>
+        </div>
+
+        <button type="button" className="google-login" >
+          <FcGoogle className="google-icon" />
+          Sign in with Google
         </button>
 
         <div className="links">

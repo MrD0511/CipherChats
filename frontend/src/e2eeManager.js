@@ -120,7 +120,6 @@ function base64ToArrayBuffer(base64) {
     return bytes.buffer;
 }
 
-
 async function encrypt_message(public_key, message){
     const enc = new TextEncoder()
     const encodedMessage = enc.encode(message)

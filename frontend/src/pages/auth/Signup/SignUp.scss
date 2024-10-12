@@ -121,6 +121,12 @@ $border-radius: 8px;
         transform: none;
       }
     }
+    .google-login{
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      align-items: center;
+    }
 
     .links {
       margin-top: 1.5rem;

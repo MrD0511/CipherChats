@@ -1,32 +1,31 @@
 import React, { useState } from "react";
 import "./Login.scss";
 import axiosInstance from "../../../axiosInstance";
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
+import { FcGoogle } from 'react-icons/fc'; // Import Google icon
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [errorMsg , setErrorMsg] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const validateEmail = (email) => {
     if (email === "") {
       setEmailError("Email required");
-      return;
-    }else{
-      setEmailError("")
+    } else {
+      setEmailError("");
     }
   };
 
   const validatePassword = (password) => {
     if (password === "") {
       setPasswordError("Password required");
-      return;
-    }else {
+    } else {
       setPasswordError("");
     }
   };
@@ -38,23 +37,28 @@ const Login = () => {
       setEmailError("Email required");
       setPasswordError("Password required");
     } else {
-      try{
-        setLoading(true)
-        const response = await axiosInstance.post('/auth/signin',{
-          "identifier" : email,
-          "password" : password
+      try {
+        setLoading(true);
+        const response = await axiosInstance.post('/auth/signin', {
+          "identifier": email,
+          "password": password
         });
-        localStorage.setItem('access_token',response.data.access_token)
-        navigate('/')
-      }catch(error){
-          setLoading(false)
-          if (error.response) {
-            setErrorMsg(error.response.data.detail || 'An error occurred');
-          } else {
-            setErrorMsg('Network error. Please try again later.');
-          }
+        localStorage.setItem('access_token', response.data.access_token);
+        navigate('/');
+      } catch (error) {
+        setLoading(false);
+        if (error.response) {
+          setErrorMsg(error.response.data.detail || 'An error occurred');
+        } else {
+          setErrorMsg('Network error. Please try again later.');
+        }
       }
     }
+  };
+
+  const handleGoogleLogin = () => {
+    // Implement Google login logic here
+    console.log("Google login clicked");
   };
 
   return (
@@ -76,7 +80,7 @@ const Login = () => {
               setEmail(e.target.value);
               validateEmail(e.target.value);
             }}
-            className={emailError && "errorField"}
+            className={emailError ? "errorField" : ""}
           />
           {emailError && <span className="error">{emailError}</span>}
         </div>
@@ -90,19 +94,29 @@ const Login = () => {
               setPassword(e.target.value);
               validatePassword(e.target.value);
             }}
-            className={passwordError && "errorField"}
+            className={passwordError ? "errorField" : ""}
           />
           {passwordError && <span className="error">{passwordError}</span>}
         </div>
-        <button type="submit" disabled={loading} >
-          {loading ? "Signing In..." : "Sign In" }</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Signing In..." : "Sign In"}
+        </button>
+        
+        <div className="separator">
+          <span>or</span>
+        </div>
+
+        <button type="button" className="google-login" onClick={handleGoogleLogin}>
+          <FcGoogle className="google-icon" />
+          Sign in with Google
+        </button>
 
         <div className="links">
           <a href="/" className="forgot-password">
             Forgot Password?
           </a>
           <a href="/signup" className="signup-link">
-            Don’t have an account? Sign up
+            Don't have an account? Sign up
           </a>
         </div>
       </form>

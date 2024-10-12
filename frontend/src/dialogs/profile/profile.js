@@ -35,7 +35,8 @@ const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token')
+    localStorage.clear()
+    indexedDB.deleteDatabase()
     navigate('/signin')
   };
 
@@ -77,7 +78,7 @@ const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
           <div className="profile-footer">
             <button className="action-button logout" onClick={handleLogout}>
               <LogOut size={20} />
-              Log out
+              Sign out
             </button>
             <button className="action-button delete-account" onClick={handleDeleteAccount}>
               <Trash2 size={20} />
