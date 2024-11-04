@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance" 
 import { useParams,Link, useNavigate } from 'react-router-dom'
-import { User, Image as ImageIcon, Send, ArrowLeft, EllipsisVertical } from 'lucide-react'
+import { User, Image as ImageIcon, Send, ArrowLeft } from 'lucide-react'
 import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from '../../e2eeManager';
-
+import EllipsisButton from '../../components/dropown';
+import { db } from '../../indexdb.service';
 
 const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     
@@ -23,6 +24,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     const [channel_id, setChannel_id] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [recipientTyping, setRecipientTyping] = useState(false);
+    const [isE2ee, setIsE2ee] = useState(false)
 
     useEffect(() => {
         if (textAreaRef.current) {
@@ -51,18 +53,36 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
 
     }, [userId, navigate])
 
+    const initialize_encryption = async (channel_id, userId) => {
+        const connection_keys = await get_connection_keys(channel_id, userId)
+        if(connection_keys){
+            partner_public_key.current = connection_keys.partnerPublicKey
+            user_private_key.current = connection_keys.privateKey
+        }else{
+            user_private_key.current = create_new_connection(channel_id)
+        }
+    }
+
     useEffect(()=>{
-        const initialize_encryption = async () => {
-            const connection_keys = await get_connection_keys(channel_id, userId)
-            if(connection_keys){
-                partner_public_key.current = connection_keys.partnerPublicKey
-                user_private_key.current = connection_keys.privateKey
+        const checkE2eeActive = async (channel_id) => {
+            let isE2eeActive = await db.isE2ee.get(channel_id);
+            if( isE2eeActive ){
+                setIsE2ee(isE2eeActive?.isActive)
+                const connection_keys = await get_connection_keys(channel_id, userId)
+                if(connection_keys){
+                    partner_public_key.current = connection_keys.partnerPublicKey
+                    user_private_key.current = connection_keys.privateKey
+                }else{
+                    user_private_key.current = create_new_connection(channel_id)
+                }
+                return true;
             }else{
-                user_private_key.current = create_new_connection(channel_id)
+                await db.isE2ee.put({channel_id, isActive : false})
+                return false
             }
         }
         if(channel_id && userId){
-            initialize_encryption()
+            checkE2eeActive(channel_id);
         }
     },[channel_id, userId])
 
@@ -70,8 +90,20 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
 
     }, [user_private_key]);
 
+    const toggleE2ee = async () => {
+        if(!isE2ee){
+            await initialize_encryption();
+        }
+        setIsE2ee(!isE2ee);
+        await db.isE2ee.update(channel_id, {
+            channel_id : channel_id,
+            isActive : isE2ee
+        })
+    }
+
     const handleIncomingMessages = async (receivedMessage) => {
-        receivedMessage.message = await decrypt_message(user_private_key.current, receivedMessage.message)
+        // receivedMessage.message = await decrypt_message(user_private_key.current, receivedMessage.message)
+
         setMessages(messages => [...messages, receivedMessage])
     }
 
@@ -122,8 +154,8 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             socket.send(JSON.stringify({ event : "stop_typing", recipient_id : userId}))
             
             try {
-                const encryptedMessage = await encrypt_message(partner_public_key.current, message.message); 
-                socket.send(JSON.stringify({ message: encryptedMessage, recipient_id: message.recipient_id }));
+                // const encryptedMessage = await encrypt_message(partner_public_key.current, message.message); 
+                socket.send(JSON.stringify({ message: message.message, recipient_id: message.recipient_id }));
             } catch (error) {
                 console.error('Error encrypting message:', error);
                 alert('Failed to send message. Please try again.'); // User feedback
@@ -201,7 +233,13 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                     <span>{sender_details?.name}</span>
                 </div>
                 <div className='options'>
-                    <EllipsisVertical />
+                    <EllipsisButton toggleE2ee={()=>{
+                            toggleE2ee()
+                            console.log("toggling")
+                        }
+                    } 
+                    isE2ee={isE2ee}
+                    />
                 </div>
             </div>
             <div className="chat-box" ref={chatBoxRef}>
@@ -255,10 +293,10 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     ) : (            
         <div className="start-chat-container">
             <button className="start-chat-button" onClick={onCreateChat}>
-                Create Chat
+                Create Channel
             </button>
             <button className="join-chat-button" onClick={onJoinChat}>
-                Join Chat
+                Join Channel
             </button>
         </div>
     );

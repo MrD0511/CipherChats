@@ -39,7 +39,7 @@ const CreateChatDialog = ({ isOpen, onClose, onConfirm }) => {
     return (
         <div className="dialog-overlay">
             <div className="dialog-box">
-                <h2>Create a New Chat</h2>
+                <h2>Create a New Channel</h2>
 
                 {/* Generate Key Button */}
                 {!generatedKey && 

@@ -1,5 +1,5 @@
 import axiosInstance from "./axiosInstance"
-import { getPrivateKey, savePrivateKey } from "./indexdb.service"
+import { db } from "./indexdb.service"
 
 async function generateKeyPair() {
     const keyPair = await window.crypto.subtle.generateKey(
@@ -27,6 +27,7 @@ async function exportPrivateKey(keyPair){
 
 async function getPublicKey(channel_id, partner_id) {
     try{
+        console.log(channel_id, partner_id)
         const response = await axiosInstance.post(`/chat/get_public_key`, {channel_id : channel_id, partner_id : partner_id})
         if(response.status === 200){
             return response.data.public_key
@@ -56,7 +57,7 @@ async function store_public_key(channel_id, public_key){
 async function create_new_connection(channel_id){
     const keyPair = await generateKeyPair()
     const privateKey = await exportPrivateKey(keyPair)
-    await savePrivateKey(channel_id, privateKey)
+    await db.keys.put({channel_id, privateKey})
     const publicKey = await exportPublicKey(keyPair)
     await store_public_key(channel_id, publicKey).catch((err)=>{console.error(err)})
     return privateKey;
@@ -92,8 +93,15 @@ async function importPublicKey(publicKeyString) {
 
 
 async function get_connection_keys(channel_id, partner_id){
+    console.log("get_connection", channel_id, partner_id)
     let partnerPublicKey = await getPublicKey(channel_id, partner_id)
-    let privateKey = await getPrivateKey(channel_id).catch((err)=>{console.error(err)})
+    let privateKey;
+    if(channel_id){
+        privateKey = await db.keys.get(channel_id)
+        privateKey = privateKey.privateKey
+    }else{
+        privateKey = await create_new_connection(channel_id)
+    }
     if(partnerPublicKey && privateKey){
         privateKey = await importPrivateKey(privateKey)
         partnerPublicKey = await importPublicKey(partnerPublicKey)

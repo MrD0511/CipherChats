@@ -7,8 +7,6 @@ import NotFound from './pages/notFound/notFound';
 
 function App() {
 
-
-
   return (
     <Router>
       <Routes>
