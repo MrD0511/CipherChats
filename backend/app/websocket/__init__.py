@@ -1,1 +1,1 @@
-from .chat_websocket import router as websocket_router
+from .chat_websocket import router as websocket_router, manager

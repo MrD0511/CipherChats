@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 from ..services import chat_service
 from ..models import store_public_key_model, get_public_key_model
+from ..websocket import manager
 
 router = APIRouter()
 
@@ -232,4 +233,59 @@ async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.
         print("delete chat: ",e)
         raise  HTTPException(status_code=500, detail="Internal Server error")
 
+@router.patch('/enable_e2ee/{channel_id}')
+async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_services.get_current_user)):
+    try:
+        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        await channels_collection.update_one({ "_id" : ObjectId(channel_id) }, { "$set" : {"is_e2ee" : data['isE2ee'] } })
 
+        partner_id = await channels_collection.aggregate([
+            # Step 1: Match messages where the user is either the sender or recipient
+            {
+                "$match": {
+                    "_id" : ObjectId(channel_id)
+                }
+            },
+            # Step 2: Add a new field to identify who the partner (the other person) is
+            {
+                "$addFields": {
+                    "partner_id": {
+                        "$cond": [
+                            { "$eq": ["$user_id", user_data['_id']] },  # If user is the sender
+                            "$partner_id",                              # Get recipient's ID
+                            "$user_id"                                  # Else get sender's ID
+                        ]
+                    }
+                }
+            },
+            # Step 3: Group by the partner_id to get unique chat participants
+            {
+                "$group": {
+                    "_id": "$partner_id",          # Group by the ID of the partner
+                }
+            },
+            # Step 5: Optionally project the fields you want (e.g., partner details and latest message)
+            {
+                "$project": {
+                    "_id": 0,                         # Exclude the default _id
+                    "partner_id": "$_id"
+                }
+            }
+        ]).to_list()
+
+        if str(partner_id[0]['partner_id']) in manager.active_connections:
+            manager.active_connections[str(partner_id[0]['partner_id'])].send_json({ "isE2ee" : data['isE2ee'] })
+        else:
+            return {
+                "msg" : "partner ot found"
+            }
+
+        return {
+            "msg" : "E2ee toggled successfully"
+        }
+    
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print(e.with_traceback)
+        raise HTTPException(status_code=500, detail="Internal Server Error")

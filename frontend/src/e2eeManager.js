@@ -93,15 +93,15 @@ async function importPublicKey(publicKeyString) {
 
 
 async function get_connection_keys(channel_id, partner_id){
-    console.log("get_connection", channel_id, partner_id)
     let partnerPublicKey = await getPublicKey(channel_id, partner_id)
-    let privateKey;
-    if(channel_id){
-        privateKey = await db.keys.get(channel_id)
-        privateKey = privateKey.privateKey
-    }else{
+
+    let privateKey = await db.keys.get(channel_id);
+    if(!privateKey){
         privateKey = await create_new_connection(channel_id)
+    }else{
+        privateKey = privateKey.privateKey
     }
+
     if(partnerPublicKey && privateKey){
         privateKey = await importPrivateKey(privateKey)
         partnerPublicKey = await importPublicKey(partnerPublicKey)

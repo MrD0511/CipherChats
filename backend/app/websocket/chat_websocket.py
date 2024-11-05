@@ -1,16 +1,16 @@
-from fastapi import WebSocket, APIRouter
+from fastapi import WebSocket, APIRouter, Depends, HTTPException
 from typing import Dict
 from ..db import get_collection
 from ..services import user_auth_services
-from datetime import datetime
 from bson import ObjectId
 import json
+from ..services import user_auth_services
 
 router = APIRouter()
 
 user_collection = get_collection('user')
 messages_collection = get_collection('messages')
-
+channels_collection = get_collection('channels')
 class connection_manager:
 
     def __init__(self):
@@ -52,6 +52,5 @@ async def chat_websocket(websocket : WebSocket):
             elif data.get('event'):
                 await manager.send_message_to_user({ "event" : data.get("event"), "sender_id" : user['sub'] }  , user['sub'], data['recipient_id'])
     except Exception as err:
-        print(err)
-        # manager.disconnect(username)
+        manager.disconnect(user['sub'])
         # print(f"User {username} disconnected")

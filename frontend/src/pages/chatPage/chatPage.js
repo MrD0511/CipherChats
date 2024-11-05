@@ -31,7 +31,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             textAreaRef.current.style.height = 'auto';
             textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
         }
-    }, [inputValue]);
+    }, [inputValue]);  //commmon opt
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -51,7 +51,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             fetchDetails()
         }
 
-    }, [userId, navigate])
+    }, [userId, navigate])  //fetching details
 
     const initialize_encryption = async (channel_id, userId) => {
         const connection_keys = await get_connection_keys(channel_id, userId)
@@ -61,7 +61,7 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         }else{
             user_private_key.current = create_new_connection(channel_id)
         }
-    }
+    } //encryption
 
     useEffect(()=>{
         const checkE2eeActive = async (channel_id) => {
@@ -84,21 +84,30 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
         if(channel_id && userId){
             checkE2eeActive(channel_id);
         }
-    },[channel_id, userId])
+    },[channel_id, userId]) //encryption
 
     useEffect(() => {
 
     }, [user_private_key]);
 
     const toggleE2ee = async () => {
-        if(!isE2ee){
-            await initialize_encryption();
-        }
+        
         setIsE2ee(!isE2ee);
-        await db.isE2ee.update(channel_id, {
-            channel_id : channel_id,
-            isActive : isE2ee
-        })
+
+        const response = await axiosInstance.patch('/enable_e2ee/'+channel_id, { isE2ee : isE2ee })
+
+        if(response.status == 200){ 
+
+            await db.isE2ee.update(channel_id, {
+                channel_id : channel_id,
+                isActive : isE2ee
+            })
+
+            if(!isE2ee){
+                await initialize_encryption(channel_id, userId);
+            }
+            
+        }
     }
 
     const handleIncomingMessages = async (receivedMessage) => {
@@ -154,8 +163,12 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             socket.send(JSON.stringify({ event : "stop_typing", recipient_id : userId}))
             
             try {
-                // const encryptedMessage = await encrypt_message(partner_public_key.current, message.message); 
-                socket.send(JSON.stringify({ message: message.message, recipient_id: message.recipient_id }));
+                if(isE2ee){
+                    const encryptedMessage = await encrypt_message(partner_public_key.current, message.message); 
+                    socket.send(JSON.stringify({ message: encryptedMessage, recipient_id: message.recipient_id }));
+                }else{
+                    socket.send(JSON.stringify({ message: message.message, recipient_id: message.recipient_id }));
+                }
             } catch (error) {
                 console.error('Error encrypting message:', error);
                 alert('Failed to send message. Please try again.'); // User feedback
