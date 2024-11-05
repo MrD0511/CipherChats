@@ -91,12 +91,19 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
     }, [user_private_key]);
 
     const toggleE2ee = async () => {
-        
-        setIsE2ee(!isE2ee);
+        console.log(isE2ee, "before")
+        if(isE2ee){
+            setIsE2ee(true)
+            console.log("wasTrue")
+        }else{
+            setIsE2ee(false)
+            console.log("wasflase")
+        }
+        console.log(isE2ee, "after")
 
         const response = await axiosInstance.patch('/enable_e2ee/'+channel_id, { isE2ee : isE2ee })
 
-        if(response.status == 200){ 
+        if(response.status === 200){ 
 
             await db.isE2ee.update(channel_id, {
                 channel_id : channel_id,
@@ -108,10 +115,17 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
             }
             
         }
+        console.log("toggled",isE2ee)
     }
 
+    useEffect(()=>{},[isE2ee])
+
     const handleIncomingMessages = async (receivedMessage) => {
-        // receivedMessage.message = await decrypt_message(user_private_key.current, receivedMessage.message)
+        console.log(isE2ee,"isE2ee")
+        console.log(receivedMessage)
+        if(!isE2ee){
+            receivedMessage.message = await decrypt_message(user_private_key.current, receivedMessage.message)
+        }
 
         setMessages(messages => [...messages, receivedMessage])
     }
@@ -122,6 +136,20 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                 const receivedMessage = JSON.parse(event.data);
                 if(receivedMessage.message){
                     handleIncomingMessages(receivedMessage)
+                }
+                else if(receivedMessage.isE2ee !== undefined){
+
+                    setIsE2ee(receivedMessage.isE2ee)
+
+                    if(receivedMessage.isE2ee){
+
+                        db.isE2ee.update(channel_id, {
+                            channel_id : channel_id,
+                            isActive : isE2ee
+                        })
+            
+                        initialize_encryption(channel_id, userId);
+                    }
                 }
                 else if(receivedMessage.event){
                     if(receivedMessage.event === "typing"){
@@ -248,7 +276,6 @@ const ChatPage = ({onCreateChat, onJoinChat, socket}) => {
                 <div className='options'>
                     <EllipsisButton toggleE2ee={()=>{
                             toggleE2ee()
-                            console.log("toggling")
                         }
                     } 
                     isE2ee={isE2ee}

@@ -10,7 +10,6 @@ import {
 
 const EllipsisButton = ({toggleE2ee, isE2ee}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isE2EEncryptionEnabled, setIsE2EEncryptionEnabled] = useState(false);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -28,19 +27,14 @@ const EllipsisButton = ({toggleE2ee, isE2ee}) => {
     }
   }, [isOpen]);
 
-  const toggleE2EEncryption = () => {
-    setIsE2EEncryptionEnabled(!isE2EEncryptionEnabled);
-    console.log(`E2E Encryption ${!isE2EEncryptionEnabled ? 'Enabled' : 'Disabled'}`);
-  };
-
   const actions = [
     {
       label: 'End-to-End Encryption',
-      icon: isE2EEncryptionEnabled ? <Lock /> : <Unlock />,
+      icon: isE2ee ? <Lock /> : <Unlock />,
       renderContent: () => (
         <div className="flex justify-between items-center w-full">
           <div className="flex items-center">
-            {isE2EEncryptionEnabled ? (
+            {isE2ee ? (
               <Lock className="mr-2 h-4 w-4 text-green-600" />
             ) : (
               <Unlock className="mr-2 h-4 w-4 text-gray-600" />
@@ -52,7 +46,11 @@ const EllipsisButton = ({toggleE2ee, isE2ee}) => {
               type="checkbox" 
               className="sr-only peer" 
               checked={isE2ee}
-              onChange={toggleE2ee}
+              onChange={()=>{
+                  toggleE2ee()
+                  console.log(isE2ee)
+                }
+              }
             />
             <div className={`relative w-11 h-6 bg-gray-200 rounded-full 
               peer dark:bg-gray-700 
@@ -60,7 +58,7 @@ const EllipsisButton = ({toggleE2ee, isE2ee}) => {
               after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
               after:bg-white after:border-gray-300 after:border after:rounded-full 
               after:h-5 after:w-5 after:transition-all 
-              ${isE2EEncryptionEnabled ? 'bg-green-600' : ''}`}>
+              ${isE2ee ? 'bg-green-600' : ''}`}>
             </div>
           </label>
         </div>
