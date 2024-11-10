@@ -21,16 +21,30 @@ async def store_public_key(request : store_public_key_model, user : dict = Depen
     try:
         user_data = await user_auth_services.get_user_by_username(user['sub'])
         request = request.dict()
+
         channel_exists = await channels_collection.find_one({"_id" : ObjectId(request['channel_id'])}, {"_id" : 1})
+
         if not channel_exists:
             raise HTTPException(status_code=404, detail="Channel not found")
-        await public_keys_collection.delete_one({ "user_id" : ObjectId(str(user_data['_id'])), "channel_id" : ObjectId(str(request['channel_id'])) })
-        await public_keys_collection.insert_one({
-            "user_id" : ObjectId(str(user_data['_id'])),
-            "public_key" : request['public_key'],
-            "channel_id" : ObjectId(request['channel_id']),
-            "createdAt" : datetime.now()
-        })
+
+        public_key_exists = await public_keys_collection.find_one({ 'user_id' : ObjectId(user_data['_id']), 'channel_id' : ObjectId(request['channel_id']) })
+
+        if public_key_exists: 
+            await public_keys_collection.update_one({
+                "user_id" : ObjectId(str(user_data['_id'])),
+                "channel_id" : ObjectId(request['channel_id'])
+            },{
+                "$set" : {
+                    "public_key" : request['public_key']
+                }
+            })
+        else:
+            await public_keys_collection.insert_one({
+                "user_id" : ObjectId(str(user_data['_id'])),
+                "public_key" : request['public_key'],
+                "channel_id" : ObjectId(request['channel_id']),
+                "createdAt" : datetime.now()
+            })
 
         return {
             "msg" : "Key stored successfully"
@@ -273,12 +287,7 @@ async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_s
             }
         ]).to_list()
 
-        if str(partner_id[0]['partner_id']) in manager.active_connections:
-            manager.active_connections[str(partner_id[0]['partner_id'])].send_json({ "isE2ee" : data['isE2ee'] })
-        else:
-            return {
-                "msg" : "partner ot found"
-            }
+        await manager.send_e2ee_activation_notification(str(partner_id[0]['partner_id']), data['isE2ee'])
 
         return {
             "msg" : "E2ee toggled successfully"

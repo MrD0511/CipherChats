@@ -1,5 +1,5 @@
 // ChatPage.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance";
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -13,16 +13,21 @@ import webSocketService from '../../websocket';
 const useEncryption = (channel_id, userId) => {
     const partner_public_key = useRef(null);
     const user_private_key = useRef(null);
+    const isE2eeRef = useRef(false);  // Store the current E2EE state in a ref
     const [isE2ee, setIsE2ee] = useState(false);
-    
+
     useEffect(() => {
         const initializeEncryption = async () => {
-            const connectionKeys = await get_connection_keys(channel_id, userId);
-            if (connectionKeys) {
-                partner_public_key.current = connectionKeys.partnerPublicKey;
-                user_private_key.current = connectionKeys.privateKey;
-            } else {
-                user_private_key.current = create_new_connection(channel_id);
+            try {
+                const connectionKeys = await get_connection_keys(channel_id, userId);
+                if (connectionKeys) {
+                    partner_public_key.current = connectionKeys.partnerPublicKey;
+                    user_private_key.current = connectionKeys.privateKey;
+                } else {
+                    user_private_key.current = await create_new_connection(channel_id);
+                }
+            } catch (error) {
+                console.error("Error initializing encryption:", error);
             }
         };
 
@@ -31,21 +36,59 @@ const useEncryption = (channel_id, userId) => {
         }
     }, [channel_id, userId]);
 
-    const toggleEncryption = async () => {
-        setIsE2ee(prev => !prev);
-        const response = await axiosInstance.patch(`/enable_e2ee/${channel_id}`, { isE2ee: !isE2ee });
-        if (response.status === 200) {
-            await db.isE2ee.update(channel_id, { isActive: !isE2ee });
-            if (!isE2ee) {
-                let connection_keys = await get_connection_keys(channel_id, userId);
-                partner_public_key.current = connection_keys.partnerPublicKey
-                user_private_key.current = connection_keys.privateKey
+    const send_enable_e2ee_req = async (channel_id, userId, newIsE2ee) => {
+        try {
+            const response = await axiosInstance.patch(`/enable_e2ee/${channel_id}`, { isE2ee: newIsE2ee });
+            if (response.status === 200) {
+                await db.isE2ee.update(channel_id, { isActive: newIsE2ee });
+                if (newIsE2ee) {
+                    const connectionKeys = await get_connection_keys(channel_id, userId);
+                    partner_public_key.current = connectionKeys.partnerPublicKey;
+                    user_private_key.current = connectionKeys.privateKey;
+                }
             }
+        } catch (error) {
+            console.error("Error toggling E2EE:", error);
         }
     };
 
-    return { isE2ee, toggleEncryption, partner_public_key, user_private_key };
+    const toggleEncryption = (remote=false) => {
+        const newIsE2ee = !isE2ee;
+        isE2eeRef.current = newIsE2ee; // Update the ref immediately
+        setIsE2ee(newIsE2ee); // This triggers re-render but won't block the execution
+        if(!remote){
+            send_enable_e2ee_req(channel_id, userId, newIsE2ee);
+        }
+    };
+    
+    const handleRemoteE2eeToggle = (e2eeFlag) => {
+        isE2eeRef.current = e2eeFlag;
+        setIsE2ee(e2eeFlag);
+    }
+
+    const encryptMessage = async (message) => {
+        if (!isE2eeRef.current) return message;
+        try {
+            return await encrypt_message(partner_public_key.current, message);
+        } catch (error) {
+            console.error("Encryption error:", error);
+            return message;
+        }
+    };
+
+    const decryptMessage = async (message) => {
+        if (!isE2eeRef.current) return message;
+        try {
+            return await decrypt_message(user_private_key.current, message);
+        } catch (error) {
+            console.error("Decryption error:", error);
+            return message;
+        }
+    };
+
+    return { isE2ee, toggleEncryption, handleRemoteE2eeToggle,encryptMessage, decryptMessage };
 };
+
 
 // ChatInput Component
 const ChatInput = ({ userId, handleMessage}) => {
@@ -125,7 +168,7 @@ const ChatBox = ({ userId, messages, recipientTyping }) => {
     return (
         <div className="chat-box" ref={chatBoxRef}>
             {messages.map((message, index) => (
-                <div key={index} className={message?.sender_id?.$oid === userId ? "messageSender" : "Mymessage"}>
+                <div key={index} className={message?.sender_id === userId ? "messageSender" : "Mymessage"}>
                     <div className="message-content">{renderMessageContent(message)}</div>
                 </div>
             ))}
@@ -172,13 +215,11 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
     const [messages, setMessages] = useState([]);
     const { userId } = useParams();
     const [channelId, setChannelId] = useState('');
-    const { isE2ee, toggleEncryption, partner_public_key, user_private_key } = useEncryption(channelId, userId);
+    const { isE2ee, toggleEncryption, handleRemoteE2eeToggle, encryptMessage, decryptMessage } = useEncryption(channelId, userId);
     const [recipientTyping, setRecipientTyping] = useState(false);
 
     const handleIncomingMessages = async (receivedMessage) => {
-        if (isE2ee && receivedMessage.message) {
-            receivedMessage.message = await decrypt_message(user_private_key.current, receivedMessage.message);
-        }
+        receivedMessage.message = await decryptMessage(receivedMessage.message);
         setMessages(messages => [...messages, receivedMessage]);
     };
 
@@ -187,7 +228,9 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
         webSocketService.socket.onmessage = (event) => {
             const receivedMessage = JSON.parse(event.data);
             if (receivedMessage.message) handleIncomingMessages(receivedMessage);
-            else if (receivedMessage.isE2ee !== undefined) toggleEncryption();
+            else if(receivedMessage.isE2ee !== undefined){
+                handleRemoteE2eeToggle(receivedMessage.isE2ee)
+            }
             else if (receivedMessage.event) setRecipientTyping(receivedMessage.event === "typing");
         };
         
@@ -197,7 +240,7 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
         if (inputValue.trim()) {
             const message = { message: inputValue, recipient_id: userId };
             setMessages([...messages, message]);
-            webSocketService.sendMessage({ message: isE2ee ? await encrypt_message(partner_public_key.current, inputValue) : inputValue, recipient_id: userId });
+            webSocketService.sendMessage({ message: await encryptMessage(inputValue), recipient_id: userId });
         }
     };
 

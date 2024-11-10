@@ -4,7 +4,7 @@ from ..db import get_collection
 from ..services import user_auth_services
 from bson import ObjectId
 import json
-from ..services import user_auth_services
+from ..services import user_auth_services,chat_service
 
 router = APIRouter()
 
@@ -28,10 +28,20 @@ class connection_manager:
             "message" : message
         })
 
+    async def send_e2ee_activation_notification(self, recipient_id: str, isE2ee: bool):
+        if recipient_id in self.active_connections:
+            recipient_socket = self.active_connections[recipient_id]
+            await recipient_socket.send_json({ "isE2ee" : isE2ee })
+        else:
+            await chat_service.queue_message(None, recipient_id, { "isE2ee" : isE2ee }, 'e2ee_notification')
+
     async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
         if recipient_id in self.active_connections:
             recipient_socket = self.active_connections[recipient_id]
             await recipient_socket.send_json(message)
+        else:
+            print("else")
+            await chat_service.queue_message(sender_id, recipient_id, message, 'message')
 
 manager = connection_manager()
 
@@ -42,6 +52,11 @@ async def chat_websocket(websocket : WebSocket):
     user = await user_auth_services.get_current_user(token)
     await manager.connect(websocket, user['sub'])
     try:
+
+        # pending_messages = await chat_service.get_pending_messages(user_id)
+        # for message in pending_messages:
+        #     await manager.send_message_to_user(message, message['sender_id'], message['recipient_id'])
+
         while True:
             data = await websocket.receive_text()
             data = json.loads(data)

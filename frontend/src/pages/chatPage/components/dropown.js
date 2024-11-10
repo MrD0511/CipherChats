@@ -48,7 +48,6 @@ const EllipsisButton = ({toggleE2ee, isE2ee}) => {
               checked={isE2ee}
               onChange={()=>{
                   toggleE2ee()
-                  console.log(isE2ee)
                 }
               }
             />

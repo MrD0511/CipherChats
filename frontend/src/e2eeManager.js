@@ -154,7 +154,7 @@ async function decrypt_message(privateKey, encryptedMessage){
 
     const enc = new TextDecoder()
     const message = enc.decode(decryptedMessage)
-    
+    console.log(message,"message")
     return message
 }
 
