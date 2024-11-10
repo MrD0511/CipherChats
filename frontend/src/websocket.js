@@ -31,7 +31,7 @@ class WebSocketService {
         this.isConnected = false;
         console.log('WebSocket connection closed');
         if (this.shouldReconnect) {
-          this.reconnect();
+          //this.reconnect();
         }
       };
   
@@ -46,7 +46,7 @@ class WebSocketService {
       setTimeout(() => {
         if (this.shouldReconnect) {
           console.log('Reconnecting...');
-          this.connect(this.url);
+          //this.connect(this.url);
         }
       }, this.reconnectInterval);
     }

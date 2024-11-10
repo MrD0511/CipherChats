@@ -5,15 +5,16 @@ import axiosInstance from "../../axiosInstance";
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { User, Image as ImageIcon, Send, ArrowLeft } from 'lucide-react';
 import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from '../../e2eeManager';
-import EllipsisButton from '../../components/dropown';
+import EllipsisButton from './components/dropown';
 import { db } from '../../indexdb.service';
 import webSocketService from '../../websocket';
+
 // Custom Hook for Encryption Management
 const useEncryption = (channel_id, userId) => {
     const partner_public_key = useRef(null);
     const user_private_key = useRef(null);
     const [isE2ee, setIsE2ee] = useState(false);
-
+    
     useEffect(() => {
         const initializeEncryption = async () => {
             const connectionKeys = await get_connection_keys(channel_id, userId);
