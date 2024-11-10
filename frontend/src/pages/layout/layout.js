@@ -3,6 +3,7 @@ import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import './layout.scss';
 import { User, Settings, KeyRound } from 'lucide-react';
 import axiosInstance from '../../axiosInstance.js';
+import webSocketService from '../../websocket.js';
 
 // Lazily load components
 const ChatPage = lazy(() => import('../chatPage/chatPage.js'));
@@ -65,13 +66,13 @@ const Layout = () => {
       }
     };
 
-    const websocket_url = process.env.REACT_APP_WEBSOCKET_URL;
-    const token = localStorage.getItem('access_token');
-    const socket = new WebSocket(`${websocket_url}/ws/chat?token=${token}`);
-    setWs(socket);
+    // const websocket_url = process.env.REACT_APP_WEBSOCKET_URL;
+    // const token = localStorage.getItem('access_token');
+    // const socket = new WebSocket(`${websocket_url}/ws/chat?token=${token}`);
+    // setWs(socket);
 
-    socket.onopen = () => console.log("WebSocket connected");
-    socket.onclose = () => console.log("WebSocket disconnected");
+    // socket.onopen = () => console.log("WebSocket connected");
+    // socket.onclose = () => console.log("WebSocket disconnected");
     
     fetchUserDetails();
     window.addEventListener('resize', handleResize);

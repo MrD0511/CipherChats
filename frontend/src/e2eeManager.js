@@ -131,7 +131,7 @@ function base64ToArrayBuffer(base64) {
 async function encrypt_message(public_key, message){
     const enc = new TextEncoder()
     const encodedMessage = enc.encode(message)
-
+    console.log(public_key)
     const encryptedMessage = await window.crypto.subtle.encrypt(
         {
             name: "RSA-OAEP"
