@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './chatPage.scss';
 import axiosInstance from "../../axiosInstance";
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { User, Image as ImageIcon, Send, ArrowLeft } from 'lucide-react';
+import { User, Image as ImageIcon, Send, ArrowLeft, Lock, Unlock } from 'lucide-react';
 import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from '../../e2eeManager';
 import EllipsisButton from './components/dropown';
 import { db } from '../../indexdb.service';
@@ -112,10 +112,13 @@ const ChatInput = ({ userId, handleMessage}) => {
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            clearTimeout(typingTimeout.current);
+            webSocketService.sendMessage({ event: "typing", recipient_id: userId })
             handleMessage(inputValue);
             setInputValue("");
         }
     };
+    
 
     const userTyping = () => {
         if (!isTyping) {
@@ -170,9 +173,23 @@ const ChatBox = ({ userId, messages, recipientTyping }) => {
         </>
     );
 
-    return (
+    const statusMessage = (message) => {
+        return (
+            <>
+                <div className='chat-status'>
+                    {
+                        message.lock ? <span><Lock className='icon'/> {message.message}</span> : <span><Unlock className='icon'/> {message.message}</span>
+                    }
+                </div>
+            </>
+        )
+    }
+    
+    return (    
         <div className="chat-box" ref={chatBoxRef}>
             {messages.map((message, index) => (
+                message.type === "status" ? statusMessage(message) :
+
                 <div key={index} className={message?.sender_id === userId ? "messageSender" : "Mymessage"}>
                     <div className="message-content">{renderMessageContent(message)}</div>
                 </div>
@@ -227,6 +244,8 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
 
     const handleIncomingMessages = async (receivedMessage) => {
         receivedMessage.message = await decryptMessage(receivedMessage.message);
+        receivedMessage.type = 'message';
+        if (recipientTyping) setRecipientTyping(false)
         setMessages(messages => [...messages, receivedMessage]);
     };
 
@@ -242,6 +261,7 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
             await handleIncomingMessages(message); // Decrypt if necessary
           } else if (message.isE2ee !== undefined) {
             await handleRemoteE2eeToggle(message.isE2ee); // Update encryption state
+            setMessages((prev)=>[...prev,{"type" : "status", "message" : message.isE2ee ? "End to end encryption Enabled" : "End to end encryption Disabled", "lock" : message.isE2ee }])
           } else if (message.event) {
             setRecipientTyping(message.event === "typing"); // Immediate UI update
           }
@@ -291,14 +311,17 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
 
     return userId ? (
         <div className="chat-container">
-            <PartnerDetails userId={userId} isE2ee={isE2ee} toggleE2ee={toggleEncryption} onChannel_id={setChannelId} />
+            <PartnerDetails userId={userId} isE2ee={isE2ee} toggleE2ee={()=>{
+                toggleEncryption()
+                setMessages((prev)=>[...prev,{"type" : "status", "message" : !isE2ee ? "End to end encryption Enabled" : "End to end encryption Disabled", "lock" : !isE2ee }])
+                }} onChannel_id={setChannelId} />
             <ChatBox messages={messages} recipientTyping={recipientTyping} userId={userId} />
             <ChatInput userId={userId} handleMessage={handleMessage} />
         </div>
     ) : (
         <div className="start-chat-container">
-            <button onClick={onCreateChat}>Create Channel</button>
-            <button onClick={onJoinChat}>Join Channel</button>
+            <button className='start-chat-button' onClick={onCreateChat}>Create Channel</button>
+            <button className='join-chat-button' onClick={onJoinChat}>Join Channel</button>
         </div>
     );
 };

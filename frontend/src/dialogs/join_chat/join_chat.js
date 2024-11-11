@@ -45,7 +45,7 @@ const JoinChatDialog = ({ isOpen, onClose, onJoin }) => {
                     className="chat-input"
                 />
                 
-                <div className='buttons'>
+                <div className='btns'>
                     <button
                         onClick={handleJoinChat}
                         className="btn"

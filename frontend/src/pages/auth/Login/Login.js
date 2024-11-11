@@ -3,6 +3,7 @@ import "./Login.scss";
 import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc'; // Import Google icon
+// import { auth, googleProvider } from '../../../firebase';
 
 const Login = () => {
   const [email, setEmail] = useState("");
