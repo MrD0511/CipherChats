@@ -15,6 +15,7 @@ const useEncryption = (channel_id, userId) => {
     const user_private_key = useRef(null);
     const isE2eeRef = useRef(false);  // Store the current E2EE state in a ref
     const [isE2ee, setIsE2ee] = useState(false);
+    const [encryptionIntialized, setEncryptionInitialized] = useState(false);
 
     useEffect(() => {
         const initializeEncryption = async () => {
@@ -26,6 +27,10 @@ const useEncryption = (channel_id, userId) => {
                 } else {
                     user_private_key.current = await create_new_connection(channel_id);
                 }
+                setEncryptionInitialized((prevState)=>{
+                    const newVal = !prevState;
+                    return newVal;
+                })
             } catch (error) {
                 console.error("Error initializing encryption:", error);
             }
@@ -61,7 +66,7 @@ const useEncryption = (channel_id, userId) => {
         }
     };
     
-    const handleRemoteE2eeToggle = (e2eeFlag) => {
+    const handleRemoteE2eeToggle = async (e2eeFlag) => {
         isE2eeRef.current = e2eeFlag;
         setIsE2ee(e2eeFlag);
     }
@@ -86,7 +91,7 @@ const useEncryption = (channel_id, userId) => {
         }
     };
 
-    return { isE2ee, toggleEncryption, handleRemoteE2eeToggle,encryptMessage, decryptMessage };
+    return { isE2ee, encryptionIntialized, toggleEncryption, handleRemoteE2eeToggle,encryptMessage, decryptMessage };
 };
 
 
@@ -215,26 +220,66 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
     const [messages, setMessages] = useState([]);
     const { userId } = useParams();
     const [channelId, setChannelId] = useState('');
-    const { isE2ee, toggleEncryption, handleRemoteE2eeToggle, encryptMessage, decryptMessage } = useEncryption(channelId, userId);
+    const { isE2ee,encryptionIntialized, toggleEncryption, handleRemoteE2eeToggle, encryptMessage, decryptMessage } = useEncryption(channelId, userId);
     const [recipientTyping, setRecipientTyping] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false); // Flag to prevent multiple message processing
+    const [messageQueue, setMessageQueue] = useState([]); // Queue to hold messages
 
     const handleIncomingMessages = async (receivedMessage) => {
         receivedMessage.message = await decryptMessage(receivedMessage.message);
         setMessages(messages => [...messages, receivedMessage]);
     };
 
+    const handleMessageQueue = async () => {
+        // Skip processing if already in progress or if the queue is empty
+        if (isProcessing || !messageQueue.length) return;
+  
+        setIsProcessing(true);
+        const message = messageQueue[0];
+  
+        try {
+          if (message.message) {
+            await handleIncomingMessages(message); // Decrypt if necessary
+          } else if (message.isE2ee !== undefined) {
+            await handleRemoteE2eeToggle(message.isE2ee); // Update encryption state
+          } else if (message.event) {
+            setRecipientTyping(message.event === "typing"); // Immediate UI update
+          }
+        } catch (err) {
+          console.error("Error processing queue:", err);
+        } finally {
+          // Remove the processed message from the queue and mark processing as done
+          setMessageQueue((prevQueue) => prevQueue.slice(1));
+          setIsProcessing(false);
+        }
+    };
+
     useEffect(() => {
-        
-        webSocketService.socket.onmessage = (event) => {
+        // Only trigger queue processing if encryption is initialized
+        if (encryptionIntialized && messageQueue.length) {
+          handleMessageQueue();
+        }
+      }, [encryptionIntialized, isProcessing, messageQueue ]);
+    
+      useEffect(() => {
+        // Set WebSocket message handler
+        const handleWebSocketMessage = async (event) => {
+          try {
             const receivedMessage = JSON.parse(event.data);
-            if (receivedMessage.message) handleIncomingMessages(receivedMessage);
-            else if(receivedMessage.isE2ee !== undefined){
-                handleRemoteE2eeToggle(receivedMessage.isE2ee)
+            
+            setMessageQueue((prevQueue) => [...prevQueue, receivedMessage]);
+    
+            if (encryptionIntialized && !isProcessing) {
+                handleMessageQueue();
             }
-            else if (receivedMessage.event) setRecipientTyping(receivedMessage.event === "typing");
+          } catch (error) {
+            console.error("Error processing incoming WebSocket message:", error);
+          }
         };
-        
-    }, [webSocketService.socket]);
+    
+        webSocketService.socket.onmessage = handleWebSocketMessage;
+    
+      }, [ encryptionIntialized, isProcessing, messageQueue ]);
 
     const handleMessage = async (inputValue) => {
         if (inputValue.trim()) {

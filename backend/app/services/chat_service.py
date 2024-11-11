@@ -1,6 +1,8 @@
 import secrets
 import string
 from ..db import get_collection
+from datetime import datetime
+import json
 
 keys_collection = get_collection('keys')
 queued_messages_collection = get_collection('queued_messages')
@@ -22,7 +24,7 @@ async def queue_message(sender_id, recipient_id, message, type):
     message_data = {
         'sender_id': sender_id,
         'recipient_id': recipient_id,
-        'message': message,
+        'message': json.dumps(message),
         'status': 'queued',
         'timestamp': datetime.now(),
         'type' : type,
@@ -30,4 +32,5 @@ async def queue_message(sender_id, recipient_id, message, type):
     await queued_messages_collection.insert_one(message_data)
 
 async def get_pending_messages(recipient_id):
-    return list(queued_messages_collection.find({'recipient_id': recipient_id, 'status': 'queued'}))
+    pending_messages = await queued_messages_collection.find({'recipient_id': recipient_id, 'status': 'queued'}).to_list()
+    return pending_messages

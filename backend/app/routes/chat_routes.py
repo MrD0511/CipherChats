@@ -95,12 +95,12 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
                 {"user_id": ObjectId(user['sub']), "partner_id": ObjectId(id) },
                 {"user_id" : ObjectId(id), "partner_id" : ObjectId(user['sub']) }
             ]
-        },{ "_id" : 1})
+        },{ "_id" : 1, "is_e2ee" : 1})
 
         if not channelExists:
             raise HTTPException(status_code=404, detail="Chat not found")
-
-        response = json.loads(json_util.dumps({"sender_details" : sender_details, "channel_id" : str(channelExists["_id"]) }))
+            
+        response = json.loads(json_util.dumps({"sender_details" : sender_details, "channel_id" : str(channelExists["_id"]), "isE2ee" : channelExists.get('is_e2ee') }))
         return response
 
     except HTTPException as http_exc:
@@ -287,12 +287,12 @@ async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_s
             }
         ]).to_list()
 
-        await manager.send_e2ee_activation_notification(str(partner_id[0]['partner_id']), data['isE2ee'])
-
+        await manager.send_e2ee_activation_notification(str(partner_id[0]['partner_id']), data['isE2ee'], channel_id)
+        
         return {
             "msg" : "E2ee toggled successfully"
         }
-    
+
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:

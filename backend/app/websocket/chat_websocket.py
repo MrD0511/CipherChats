@@ -5,12 +5,14 @@ from ..services import user_auth_services
 from bson import ObjectId
 import json
 from ..services import user_auth_services,chat_service
+from datetime import datetime
 
 router = APIRouter()
 
 user_collection = get_collection('user')
-messages_collection = get_collection('messages')
+queued_messages_collection = get_collection('queued_messages')
 channels_collection = get_collection('channels')
+
 class connection_manager:
 
     def __init__(self):
@@ -28,20 +30,19 @@ class connection_manager:
             "message" : message
         })
 
-    async def send_e2ee_activation_notification(self, recipient_id: str, isE2ee: bool):
+    async def send_e2ee_activation_notification(self, recipient_id: str, isE2ee : bool, channel_id : str):
         if recipient_id in self.active_connections:
             recipient_socket = self.active_connections[recipient_id]
-            await recipient_socket.send_json({ "isE2ee" : isE2ee })
+            await recipient_socket.send_json({ "event" : "e2ee_notification", "isE2ee" : isE2ee, "channel_id" : channel_id, "type" : "e2ee" })
         else:
-            await chat_service.queue_message(None, recipient_id, { "isE2ee" : isE2ee }, 'e2ee_notification')
+            await chat_service.queue_message(None, recipient_id, { "isE2ee" : isE2ee, "channel_id" : channel_id }, 'e2ee')
 
     async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
         if recipient_id in self.active_connections:
             recipient_socket = self.active_connections[recipient_id]
             await recipient_socket.send_json(message)
-        else:
-            print("else")
-            await chat_service.queue_message(sender_id, recipient_id, message, 'message')
+        elif message.get('message'):
+            await chat_service.queue_message(sender_id, recipient_id, {"message" : message.get('message') }, 'message')
 
 manager = connection_manager()
 
@@ -53,9 +54,15 @@ async def chat_websocket(websocket : WebSocket):
     await manager.connect(websocket, user['sub'])
     try:
 
-        # pending_messages = await chat_service.get_pending_messages(user_id)
-        # for message in pending_messages:
-        #     await manager.send_message_to_user(message, message['sender_id'], message['recipient_id'])
+        pending_messages = await chat_service.get_pending_messages(user['sub'])
+        for message in pending_messages:
+            data = json.loads(message['message'])
+            data['recipient_id'] = message['recipient_id']
+            data['sender_id'] = message['sender_id']
+            await websocket.send_json(data)
+            queued_messages_collection.delete_one({ "_id" : ObjectId(message['_id']) })
+
+
 
         while True:
             data = await websocket.receive_text()
@@ -68,4 +75,4 @@ async def chat_websocket(websocket : WebSocket):
                 await manager.send_message_to_user({ "event" : data.get("event"), "sender_id" : user['sub'] }  , user['sub'], data['recipient_id'])
     except Exception as err:
         manager.disconnect(user['sub'])
-        # print(f"User {username} disconnected")
+        print(f"User disconnected", err)
