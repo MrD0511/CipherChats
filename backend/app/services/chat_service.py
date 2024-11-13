@@ -26,7 +26,7 @@ async def queue_message(sender_id, recipient_id, message, type):
         'recipient_id': recipient_id,
         'message': json.dumps(message),
         'status': 'queued',
-        'timestamp': datetime.now(),
+        'timestamp': message.get('timestamp'),
         'type' : type,
     }
     await queued_messages_collection.insert_one(message_data)

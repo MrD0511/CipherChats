@@ -52,85 +52,80 @@ $secondary-color: #3f3f5f;
     padding: 20px;
     background-color: $background-dark;
     height: 100%;
-
+  
     &::-webkit-scrollbar {
       width: 6px;
     }
-
+  
     &::-webkit-scrollbar-thumb {
       background-color: $accent-color;
       border-radius: 3px;
     }
-
-    .chat-status{
+  
+    .chat-status {
       width: 100%;
       display: flex;
       justify-content: center;
+      
+      span {
+        padding: 5px 10px;
+        display: flex;
+        font-size: 0.7em;
+        color: $text-color;
+        background-color: #3f3f5f;
+        text-align: center;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        align-items: center;
+        gap: 0.7rem;
+      }
+  
+      .icon {
+        width: 0.7rem;
+        height: 0.7rem;
+      }
     }
-
-    .chat-status span{
-      padding: 5px 10px;
-      display: flex;
-      font-size: 0.7em;
-      color: $text-color;
-      background-color: #3f3f5f;
-      text-align : center;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      align-items: center;
-      gap : 0.7rem;
-    }
-
-    .chat-status .icon{
-      width : 0.7rem;
-      height: 0.7rem;
-    }
-
+  
     .messageSender,
     .Mymessage {
       margin-bottom: 15px;
       word-wrap: break-word;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column; /* Stack timestamp and message vertically */
+      align-items: flex-start;
       animation: fadeInSlide 0.3s ease-out;
-      
+      gap : 0.2rem;
+
+      .timestamp {
+        font-size: 0.7em;
+        color: $secondary-color;
+        font-weight: 500;
+      }
+  
       .message-content {
         padding: 10px 15px;
         border-radius: 18px;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         max-width: 70%;
-      }
-
-      .message-image {
-        max-width: 100%;
-        border-radius: 8px;
-        margin-bottom: 5px;
-      }
-
-      .message-text {
-        display: inline-block;
+        min-width: 5%;
       }
     }
-
-    .messageSender {
-      justify-content: flex-start;
-
-      .message-content {
-        background-color: $secondary-color;
-        border-bottom-left-radius: 4px;
-      }
+  
+    .messageSender .message-content {
+      background-color: $secondary-color;
+      border-bottom-left-radius: 4px;
     }
-
+  
     .Mymessage {
-      justify-content: flex-end;
-
+      align-items: flex-end;
+  
       .message-content {
         background-color: $accent-color;
         color: white;
         border-bottom-right-radius: 4px;
       }
     }
-
+  
     .typing-indicator {
       padding: 10px 15px;
       display: inline-block;
@@ -142,6 +137,8 @@ $secondary-color: #3f3f5f;
       animation: blink 1.5s infinite;
     }
   }
+  
+  
 
   @keyframes blink {
     0% { opacity: 1; }

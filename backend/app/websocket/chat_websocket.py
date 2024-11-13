@@ -42,7 +42,7 @@ class connection_manager:
             recipient_socket = self.active_connections[recipient_id]
             await recipient_socket.send_json(message)
         elif message.get('message'):
-            await chat_service.queue_message(sender_id, recipient_id, {"message" : message.get('message') }, 'message')
+            await chat_service.queue_message(sender_id, recipient_id, {"message" : message.get('message'), "timestamp" : message.get('timestamp') }, 'message')
 
 manager = connection_manager()
 
@@ -62,14 +62,12 @@ async def chat_websocket(websocket : WebSocket):
             await websocket.send_json(data)
             queued_messages_collection.delete_one({ "_id" : ObjectId(message['_id']) })
 
-
-
         while True:
             data = await websocket.receive_text()
             data = json.loads(data)
             
             if data.get('message'):
-                await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id']}, user['sub'], data['recipient_id'])
+                await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id'], "timestamp" : data.get('timestamp') }, user['sub'], data['recipient_id'])
             
             elif data.get('event'):
                 await manager.send_message_to_user({ "event" : data.get("event"), "sender_id" : user['sub'] }  , user['sub'], data['recipient_id'])

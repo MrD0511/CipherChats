@@ -82,7 +82,6 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
       const form_data = new FormData();
       form_data.append("username", formData.username);
       form_data.append("name", formData.name);
-      console.log(formData)
       if (formData.profile_photo) {
         form_data.append("profile_photo", formData.profile_photo); // Only append if a new photo is selected
       }

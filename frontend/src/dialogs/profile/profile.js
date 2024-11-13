@@ -24,7 +24,6 @@ const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
 
   const handleEditProfile = () => {
     // Implement edit profile logic
-    console.log('Edit profile');
     onEditProfile()
     onClose()
   };

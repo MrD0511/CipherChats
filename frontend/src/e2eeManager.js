@@ -27,7 +27,6 @@ async function exportPrivateKey(keyPair){
 
 async function getPublicKey(channel_id, partner_id) {
     try{
-        console.log(channel_id, partner_id)
         const response = await axiosInstance.post(`/chat/get_public_key`, {channel_id : channel_id, partner_id : partner_id})
         if(response.status === 200){
             return response.data.public_key
@@ -131,7 +130,6 @@ function base64ToArrayBuffer(base64) {
 async function encrypt_message(public_key, message){
     const enc = new TextEncoder()
     const encodedMessage = enc.encode(message)
-    console.log(public_key)
     const encryptedMessage = await window.crypto.subtle.encrypt(
         {
             name: "RSA-OAEP"
@@ -154,7 +152,6 @@ async function decrypt_message(privateKey, encryptedMessage){
 
     const enc = new TextDecoder()
     const message = enc.decode(decryptedMessage)
-    console.log(message,"message")
     return message
 }
 
