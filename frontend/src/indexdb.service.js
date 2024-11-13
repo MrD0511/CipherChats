@@ -15,12 +15,10 @@ async function addMessage(channel_id, message, sender_id, recepient_id, timestam
 
 
 async function getMessage(channel_id, size, number){
-  const allMessages = await db.chat.where('channel_id').equals(channel_id).offset(number * size)
+  return await db.chat.where('channel_id').equals(channel_id).offset(number * size)
   .limit(size)
   .reverse()
   .toArray();
-
-  return allMessages.reverse()
 }
 
 async function getAllRecords(channel_id){

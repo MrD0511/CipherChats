@@ -278,8 +278,9 @@ const FetchAllMessages = ({channel_id,setMessages}) => {
         try{
             const prevMessages = await getMessage(channel_id, 10, paginationNumber);
             if(prevMessages.length !== 0){
+                console.log(prevMessages.length)
                 prevMessages.map(async (message) => {
-                    setMessages((prev)=>[...prev, message])
+                    setMessages((prev)=>[ message, ...prev])
                 })
                 setPaginationNumber((prev)=>prev+1)
             }else{
@@ -317,6 +318,14 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
     const [messageQueue, setMessageQueue] = useState([]); // Queue to hold messages
     const {fetchMessages} = FetchAllMessages({channel_id : channelId, setMessages})
     
+    useEffect(()=>{
+        setMessages([])
+        setRecipientTyping(false)
+        setMessageQueue([])
+        setChannelId('')
+
+    },[userId, setMessages, setRecipientTyping, setMessageQueue, setChannelId])
+
     const handleIncomingMessages = useCallback(async (receivedMessage) => {
         receivedMessage.message = await decryptMessage(receivedMessage.message);
         receivedMessage.type = 'message';
