@@ -72,7 +72,7 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile,onCreateChat, on
         </div>
 
         <div className="all-chats">
-          {filteredChats.length != 0 ? 
+          {filteredChats.length !== 0 ? 
           filteredChats.map((chat, index) => (
             <div
               key={index}

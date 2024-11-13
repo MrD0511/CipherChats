@@ -216,7 +216,7 @@ const PartnerDetails = ({ userId, toggleE2ee, isE2ee, onChannel_id }) => {
             }
         };
         if (userId) fetchDetails();
-    }, [userId]);
+    }, [userId, onChannel_id, navigate]);
 
     return (
         <div className='sender'>
@@ -242,14 +242,14 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
     const [isProcessing, setIsProcessing] = useState(false); // Flag to prevent multiple message processing
     const [messageQueue, setMessageQueue] = useState([]); // Queue to hold messages
 
-    const handleIncomingMessages = async (receivedMessage) => {
+    const handleIncomingMessages = useCallback(async (receivedMessage) => {
         receivedMessage.message = await decryptMessage(receivedMessage.message);
         receivedMessage.type = 'message';
-        if (recipientTyping) setRecipientTyping(false)
-        setMessages(messages => [...messages, receivedMessage]);
-    };
+        if (recipientTyping) setRecipientTyping(false);
+        setMessages((messages) => [...messages, receivedMessage]);
+    }, [decryptMessage, recipientTyping]);
 
-    const handleMessageQueue = async () => {
+    const handleMessageQueue = useCallback(async () => {
         // Skip processing if already in progress or if the queue is empty
         if (isProcessing || !messageQueue.length) return;
   
@@ -272,14 +272,14 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
           setMessageQueue((prevQueue) => prevQueue.slice(1));
           setIsProcessing(false);
         }
-    };
+    },[handleIncomingMessages, handleRemoteE2eeToggle, isProcessing, messageQueue]);
 
     useEffect(() => {
         // Only trigger queue processing if encryption is initialized
         if (encryptionIntialized && messageQueue.length) {
           handleMessageQueue();
         }
-      }, [encryptionIntialized, isProcessing, messageQueue ]);
+      }, [encryptionIntialized, isProcessing, messageQueue, handleMessageQueue ]);
     
       useEffect(() => {
         // Set WebSocket message handler
@@ -299,7 +299,7 @@ const ChatPage = ({ onCreateChat, onJoinChat}) => {
     
         webSocketService.socket.onmessage = handleWebSocketMessage;
     
-      }, [ encryptionIntialized, isProcessing, messageQueue ]);
+      }, [ encryptionIntialized, isProcessing, messageQueue, handleMessageQueue ]);
 
     const handleMessage = async (inputValue) => {
         if (inputValue.trim()) {

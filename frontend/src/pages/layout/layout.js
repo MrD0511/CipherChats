@@ -30,7 +30,6 @@ const Layout = () => {
   
   const [profileDetails, setProfileDetails] = useState(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-  const [ws, setWs] = useState(null);
   const { chatId, userId } = useParams();
   const navigate = useNavigate();
 
@@ -97,7 +96,6 @@ const Layout = () => {
                   onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
                   onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
                   className="chatBox" 
-                  socket={ws}
                 />
                 <Outlet />
               </Suspense>
@@ -131,7 +129,6 @@ const Layout = () => {
                 onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
                 onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
                 className="chatBox" 
-                socket={ws}
               />
             </Suspense>
           </>
