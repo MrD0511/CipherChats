@@ -7,6 +7,8 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from bson import ObjectId
 from ..db import get_collection
+import secrets
+import string
 
 load_dotenv()
 
@@ -15,6 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 secret_key = os.getenv('SECRET_KEY')
 algorithm = os.getenv('ALGORITHM')
+user_collection = get_collection('user')
 
 def hash_password(password: str):
     return pwd_context.hash(password)
@@ -47,6 +50,24 @@ def verify_token(token: str):
     except JWTError:
         raise credentials_exception
     
+async def create_username(name : str):
+    username = name.lower()
+    username = username.replace(" ","")
+    old_username = username
+
+    characters = string.digits
+
+    while True:
+
+        exists = await user_collection.find_one({ "username" : username })
+
+        if not exists:
+            return username
+        else:
+            username = old_username
+            key = ''.join(secrets.choice(characters) for _ in range(5))
+            username = username+key
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = verify_token(token)
     return payload

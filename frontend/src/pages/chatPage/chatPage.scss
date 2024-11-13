@@ -7,11 +7,12 @@ $secondary-color: #3f3f5f;
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; // Use full height of the viewport
+  height: calc(100vh - 0.8rem); // Use full height of the viewport
   background-color: $background-dark;
   color: $text-color;
   border-radius: 0.2rem;
   width: 100%;
+  border-radius : 0.4rem;
 
   .sender {
     display: flex;

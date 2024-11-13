@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import "./Login.scss";
 import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from 'react-router-dom';
-import { FcGoogle } from 'react-icons/fc'; // Import Google icon
-// import { auth, googleProvider } from '../../../firebase';
+import { FcGoogle } from 'react-icons/fc'; 
+import { auth, googleProvider } from "../../../firebase";
+
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -59,23 +60,39 @@ const Login = () => {
 
   const handleGoogleLogin = () => {
     // Implement Google login logic here
-    console.log("Google login clicked");
+
+    auth.signInWithPopup(googleProvider).then( async (result) => {
+
+      const id_token = await result.user.getIdToken();
+
+      const data = {
+        "id_token" : id_token
+      }
+
+      const response = await axiosInstance.post('/auth/googleAuth', data)
+
+      localStorage.setItem('access_token', response.data.access_token);
+      navigate('/');
+
+    }).catch((err)=>{
+      console.error(err)
+    })
   };
 
   return (
     <div className="login-container">
       <div className='brand-name'>
-        <span className="cipher">Cipher</span>
-        <span className="chat">Chat</span>
+        <span className="cipher">CipherChat</span>
+        {/* <span className="chat">Chat</span> */}
       </div>
       <form className="login-form" onSubmit={handleSubmit}>
         <h2>Login</h2>
         {errorMsg && <p className="error">{errorMsg}</p>}
         <div className="form-group">
-          <label>Email</label>
+          <label>Email or Username</label>
           <input
             type="text"
-            placeholder="Enter your email"
+            placeholder="Enter your email or username"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -121,7 +138,7 @@ const Login = () => {
           </a>
         </div>
       </form>
-      <div className="stars">
+      {/* <div className="stars">
         {[...Array(20)].map((_, i) => (
           <div key={i} className="star" style={{
             left: `${Math.random() * 100}%`,
@@ -129,7 +146,7 @@ const Login = () => {
             animationDelay: `${Math.random() * 2}s`
           }}></div>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 };

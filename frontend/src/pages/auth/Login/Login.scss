@@ -1,9 +1,9 @@
-$primary-color: #8a2be2; // Updated accent color
-$secondary-color: #4a90e2; // Blue color for "Chat"
-$background-color: #000000; // Dark background
-$input-background: #0f131e; // Slightly lighter than background
-$error-color: #e74c3c; // Red for error messages
-$text-color: #e1e1e1; // Updated light text color
+$primary-color: #8a2be2;
+$secondary-color: #4a90e2;
+$background-color: #000000;
+$input-background: #0f131e;
+$error-color: #e74c3c;
+$text-color: #e1e1e1;
 $border-radius: 8px;
 
 .login-container {
@@ -11,9 +11,11 @@ $border-radius: 8px;
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  height: 100vh; // Full screen height
+  height: 100vh;
   background-color: $background-color;
-  padding: 0.5rem; // Padding for smaller screens
+  padding: 0.5rem;
+  position: relative;
+  overflow: hidden;
 
   .brand-name {
     margin-top: 2.5rem;
@@ -21,32 +23,37 @@ $border-radius: 8px;
     font-size: 2.5rem;
     font-weight: bold;
     letter-spacing: 2px;
-    z-index: 2;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    z-index: 2;
+
     .cipher {
       color: $primary-color;
-      animation: scramble 5s infinite;
+      animation: glitch 3s infinite;
+      background: linear-gradient(to right, $primary-color, $secondary-color);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .chat {
-      color: $secondary-color;
-      animation: float 3s ease-in-out infinite;
-    }
+    // .chat {
+    //   color: $secondary-color;
+    //   animation: float 3s ease-in-out infinite;
+    // }
   }
 
   .login-form {
     z-index: 1;
     background-color: $input-background;
     border-radius: $border-radius;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-    // width: 100%; // Full width for smaller screens
-    max-width: 350px; // Limit max width on larger screens
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+    max-width: 350px;
     text-align: center;
     padding: 1.5rem;
 
     h2 {
       margin-bottom: 2rem;
-      color: $primary-color;
+      background: linear-gradient(to right, $primary-color, $secondary-color);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       font-weight: bold;
       letter-spacing: 1px;
     }
@@ -67,19 +74,20 @@ $border-radius: 8px;
       }
 
       input {
-        width: 100%; // Ensures input takes up full width
+        width: 100%;
         padding: 0.75rem;
         border: 1px solid #333;
         background-color: $input-background;
         color: $text-color;
         border-radius: $border-radius;
         font-size: 1rem;
-        transition: border 0.3s ease;
-        box-sizing: border-box; // Ensures padding & borders are included in width
+        transition: all 0.3s ease;
+        box-sizing: border-box;
 
         &:focus {
           border-color: $primary-color;
           outline: none;
+          box-shadow: 0 0 8px $primary-color;
         }
       }
 
@@ -95,7 +103,7 @@ $border-radius: 8px;
     }
 
     button {
-      background-color: $primary-color;
+      background: linear-gradient(to right, $primary-color, $secondary-color);
       color: white;
       border: none;
       padding: 0.8rem 1rem;
@@ -104,11 +112,12 @@ $border-radius: 8px;
       font-size: 1rem;
       font-weight: bold;
       width: 100%;
-      transition: background-color 0.3s ease, transform 0.2s ease;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
 
       &:hover {
-        background-color: darken($primary-color, 10%);
         transform: translateY(-3px);
+        box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
       }
 
       &:active {
@@ -116,16 +125,26 @@ $border-radius: 8px;
       }
 
       &:disabled {
-        background-color: lighten($primary-color, 20%);
+        background: lighten($primary-color, 20%);
         cursor: not-allowed;
         transform: none;
       }
     }
-    .google-login{
+
+    .google-login {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 0.5rem;
+      background: linear-gradient(to right, $primary-color, $secondary-color);
+      border-radius: $border-radius;
+      padding: 0.8rem 1rem;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
+      }
     }
 
     .links {
@@ -145,6 +164,7 @@ $border-radius: 8px;
       }
     }
   }
+
   .star {
     position: absolute;
     width: 2px;
@@ -155,26 +175,13 @@ $border-radius: 8px;
   }
 }
 
-// Media query for smaller screens (mobile view)
-@media (max-width: 600px) {
-  .login-form {
-    padding: 1.5rem; // Reduce padding on smaller screens
-    margin: 10px; // Reduce margin for mobile view
-    width: unset; // Ensure width adapts to smaller screens
-  }
-}
-@media (min-width : 600px) {
-  .login-form{
-    width: 100%;
-  }
-}
-
+// Animations
 @keyframes twinkle {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 
-@keyframes scramble {
+@keyframes glitch {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
   25%, 75% { 
@@ -186,4 +193,18 @@ $border-radius: 8px;
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
+}
+
+// Media query for smaller screens (mobile view)
+@media (max-width: 600px) {
+  .login-form {
+    padding: 1.5rem;
+    margin: 10px;
+    width: unset;
+  }
+}
+@media (min-width : 600px) {
+  .login-form {
+    width: 100%;
+  }
 }

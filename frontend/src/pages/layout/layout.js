@@ -34,19 +34,18 @@ const Layout = () => {
   const { chatId, userId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      navigate('/signin');
-    } 
-  }, [navigate]);
-
   const toggleDialog = useCallback((dialogName) => {
     setDialogStates(prevState => ({
       ...prevState,
       [dialogName]: !prevState[dialogName]
     }));
   }, []);
+
+  useEffect(()=>{
+    const websocket_url = process.env.REACT_APP_WEBSOCKET_URL;
+    const token = localStorage.getItem('access_token');
+    webSocketService.connect(`${websocket_url}/ws/chat?token=${token}`)
+  },[])
 
   const handleSelectChat = useCallback((id) => {
     navigate(`/chats/${id}`);
@@ -65,14 +64,6 @@ const Layout = () => {
         console.error('Failed to fetch user details:', error);
       }
     };
-
-    // const websocket_url = process.env.REACT_APP_WEBSOCKET_URL;
-    // const token = localStorage.getItem('access_token');
-    // const socket = new WebSocket(`${websocket_url}/ws/chat?token=${token}`);
-    // setWs(socket);
-
-    // socket.onopen = () => console.log("WebSocket connected");
-    // socket.onclose = () => console.log("WebSocket disconnected");
     
     fetchUserDetails();
     window.addEventListener('resize', handleResize);
@@ -86,8 +77,8 @@ const Layout = () => {
       <div className="chat-layout">
         <div className="side-bar">
           <div className="options">
-            <div><Settings /></div>
-            <div><KeyRound /></div>
+            <div><Settings className='icon' /></div>
+            <div><KeyRound className='icon' /></div>
             <div onClick={() => toggleDialog('isProfileOpen')}>
               {profileDetails?.profile_url ? 
                 <img className="profile_photo" src={profileDetails.profile_url} alt='profile' />

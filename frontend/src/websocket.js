@@ -82,8 +82,6 @@ class WebSocketService {
   }
   
 const webSocketService = new WebSocketService();
-const websocket_url = process.env.REACT_APP_WEBSOCKET_URL;
-const token = localStorage.getItem('access_token');
-webSocketService.connect(`${websocket_url}/ws/chat?token=${token}`)
+
 export default webSocketService;
   

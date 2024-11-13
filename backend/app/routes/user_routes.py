@@ -88,3 +88,4 @@ async def get_profile(user : dict = Depends(user_auth_services.get_current_user)
         print("get_profile", e)
         raise HTTPException(status_code=500, detail="Internal server error.")
     
+

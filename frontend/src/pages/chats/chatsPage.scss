@@ -10,6 +10,7 @@ $secondary-color: #3f3f5f;
   height: 100%;
   background-color: $background-dark;
   color: $text-color;
+  border-radius : 0.4rem;
 
   .header {
     display: flex;
@@ -94,6 +95,8 @@ $secondary-color: #3f3f5f;
     }
 
     .all-chats {
+      width : 100%;
+
       .chat-message-container {
         display: grid;
         grid-template-columns: 3rem calc(100% - 3rem);
@@ -154,6 +157,34 @@ $secondary-color: #3f3f5f;
               color: #9e9e9e;
             }
           }
+        }
+      }
+
+      .no-chats-found {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width : 100%;
+        height : 100%;
+        margin-top : 2rem;
+
+        .no-chats-message {
+          font-size: 1rem;
+          font-weight: bold;
+          color: $secondary-color;
+          animation: fade-in 0.5s ease-in-out;
+          width : fit-content;
+        }
+      }
+      
+      @keyframes fade-in {
+        0% {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
     }

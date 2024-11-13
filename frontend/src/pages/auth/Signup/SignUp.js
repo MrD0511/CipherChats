@@ -3,6 +3,7 @@ import "./SignUp.scss";
 import axiosInstance from "../../../axiosInstance";
 import { useNavigate } from "react-router-dom";
 import { FcGoogle } from 'react-icons/fc'; // Import Google icon
+import { auth, googleProvider } from "../../../firebase";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -115,9 +116,30 @@ const Signup = () => {
     }
   };
 
+  const handleGoogleSignup = async () => {
+
+    auth.signInWithPopup(googleProvider).then( async (result) => {
+
+      const id_token = await result.user.getIdToken();
+
+      const data = {
+        "id_token" : id_token
+      }
+
+      const response = await axiosInstance.post('/auth/googleAuth', data)
+
+      localStorage.setItem('access_token', response.data.access_token);
+      navigate('/');
+
+    }).catch((error) => {
+      console.error(error)
+    })
+
+  }
+
   return (
     <div className="signup-container">
-      <div className='brand-name'>
+      <div className="brand-name">
         <span className="cipher">Cipher</span>
         <span className="chat">Chat</span>
       </div>
@@ -143,23 +165,23 @@ const Signup = () => {
               setEmail(e.target.value);
               validateEmail(e.target.value);
             }}
-            className={emailError && "errorField"}
+            className={emailError && 'errorField'}
           />
           {emailError && <span className="error">{emailError}</span>}
         </div>
         <div className="form-group">
-            <label >Username</label>
-            <input
+          <label>Username</label>
+          <input
             type="text"
             placeholder="Enter a username"
-            value = {username}
-            onChange={ (e) => {
+            value={username}
+            onChange={(e) => {
               setUsername(e.target.value);
               validateUsername(e.target.value);
             }}
-            className={usernameError && "errorField"}
-            />
-            {usernameError && <span className="error">{usernameError}</span>}
+            className={usernameError && 'errorField'}
+          />
+          {usernameError && <span className="error">{usernameError}</span>}
         </div>
         <div className="form-group">
           <label>Password</label>
@@ -171,7 +193,7 @@ const Signup = () => {
               setPassword(e.target.value);
               validatePassword(e.target.value);
             }}
-            className={passwordError && "errorField"}
+            className={passwordError && 'errorField'}
           />
           {passwordError && <span className="error">{passwordError}</span>}
         </div>
@@ -185,38 +207,40 @@ const Signup = () => {
               setConfirmPassword(e.target.value);
               validateConfirmPassword(password, e.target.value);
             }}
-            className={confirmPasswordError && "errorField"}
+            className={confirmPasswordError && 'errorField'}
           />
-          {confirmPasswordError && (
-            <span className="error">{confirmPasswordError}</span>
-          )}
+          {confirmPasswordError && <span className="error">{confirmPasswordError}</span>}
         </div>
-        <button type="submit" disabled={loading} >
-          {loading ? "Signing Up ..." : "Sign Up"}
+        <button type="submit" disabled={loading}>
+          {loading ? 'Signing Up ...' : 'Sign Up'}
         </button>
 
         <div className="separator">
           <span>or</span>
         </div>
 
-        <button type="button" className="google-login" >
+        <button type="button" className="google-login" onClick={handleGoogleSignup}>
           <FcGoogle className="google-icon" />
           Sign in with Google
         </button>
 
         <div className="links">
-          <a href='/signin' className="signup-link">
+          <a href="/signin" className="signup-link">
             Already have an account? Log in
           </a>
         </div>
       </form>
       <div className="stars">
         {[...Array(20)].map((_, i) => (
-          <div key={i} className="star" style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 2}s`
-          }}></div>
+          <div
+            key={i}
+            className="star"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          ></div>
         ))}
       </div>
     </div>
