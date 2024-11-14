@@ -46,7 +46,7 @@ async def edit_profile(username: str = Form(...),
             }
         )
 
-        return {"msg": "Profile updated successfully", "profile_photo_url": profile_photo_url}
+        return {"msg": "Profile updated successfully", "profile_photo_url": profile_photo_url, "username": username, "name": name }
 
     except HTTPException as http_exc:
         raise http_exc

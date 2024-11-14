@@ -168,7 +168,8 @@ const Layout = () => {
         <EditProfileDialog 
           isOpen={dialogStates.isEditProfileOpen} 
           onClose={() => toggleDialog('isEditProfileOpen')}
-          initialData={profileDetails} 
+          initialData={profileDetails}
+          setProfileDetails={setProfileDetails} 
         />
       </Suspense>
 
@@ -177,6 +178,7 @@ const Layout = () => {
           isOpen={dialogStates.isProfileOpen}
           onClose={() => toggleDialog('isProfileOpen')}
           onEditProfile={() => toggleDialog('isEditProfileOpen')}
+          user_details={profileDetails}
         />
       </Suspense>
     </>

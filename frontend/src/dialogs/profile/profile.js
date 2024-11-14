@@ -5,22 +5,9 @@ import axiosInstance from '../../axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
 
-const ProfileDialog = ({ isOpen, onClose, onEditProfile }) => {
-  const [user_details, setUser_details] = useState(null)
+const ProfileDialog = ({ isOpen, onClose, onEditProfile, user_details }) => {
   
   const navigate = useNavigate()
-
-  useEffect(()=>{
-    const fetch_user_details = async () => {
-      try{
-        let response = await axiosInstance.get('/user/profile');
-        setUser_details(Object(response.data))
-      }catch(e){
-        console.error(e)
-      }
-    }
-    fetch_user_details()
-  },[])
 
   const handleEditProfile = () => {
     // Implement edit profile logic

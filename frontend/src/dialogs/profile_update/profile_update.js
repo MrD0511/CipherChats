@@ -3,7 +3,7 @@ import { X, Edit2 } from 'lucide-react';
 import './profile_update.scss'
 import axiosInstance from '../../axiosInstance';
 
-const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
+const EditProfileDialog = ({ isOpen, onClose, initialData, setProfileDetails }) => {
   const [formData, setFormData] = useState({
     username: '',
     name: '',
@@ -85,14 +85,34 @@ const EditProfileDialog = ({ isOpen, onClose, initialData }) => {
       if (formData.profile_photo) {
         form_data.append("profile_photo", formData.profile_photo); // Only append if a new photo is selected
       }
-      const response = await axiosInstance.post('/user/profile/edit', form_data, {
+      await axiosInstance.post('/user/profile/edit', form_data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      });
-      if (response.status === 200) {
+      }).then((response)=>{
+        setProfileDetails((prev)=>{
+          const data = {
+            name : response.data.name,
+            username : response.data.username,
+            profile_url : response.data.profile_photo_url
+          }
+          if (prev) {
+            return {
+              ...prev,
+              ...data
+            }
+          }
+        })
+        setFormData({
+          username: response.data.username,
+          name: response.data.name,
+          profile_photo: response.data.profile_photo_url,
+          profile_photo_preview: '/default-avatar.png',
+        });
         onClose();
-      }
+      }).catch((err) => {
+        console.error("Error updating profile : ",err);
+      });
     }
   };
 

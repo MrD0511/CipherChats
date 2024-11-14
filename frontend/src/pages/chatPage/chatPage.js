@@ -205,10 +205,10 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
         </>
     );
 
-    const statusMessage = (message) => {
+    const statusMessage = (message, id) => {
         return (
             <>
-                <div className='chat-status'>
+                <div className='chat-status' key={id}>
                     {
                         message.lock ? <span><Lock className='icon'/> {message.message}</span> : <span><Unlock className='icon'/> {message.message}</span>
                     }
@@ -219,9 +219,9 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
     
     return (    
         <div className="chat-box" ref={chatBoxRef}>
-            {messages.map((message, index) => (
-                message.type === "status" ? statusMessage(message) :
-                <div key={index} className={message?.sender_id === userId ? "messageSender" : "Mymessage"}>
+            {messages.map((message) => (
+                message.type === "status" ? statusMessage(message, message.id) :
+                <div key={message.id} className={message?.sender_id === userId ? "messageSender" : "Mymessage"}>
                     <div className="message-content">
                         {renderMessageContent(message)}
                     </div>
@@ -365,14 +365,12 @@ const ChatPage = ({userId}) => {
         }
     }, [encryptionIntialized, isProcessing, messageQueue, handleMessageQueue]);
 
-
-
     useEffect(() => {
         // WebSocket message handler
         const handleWebSocketMessage = async (event) => {
             try {
                 const receivedMessage = JSON.parse(event.data);
-                if (receivedMessage.channelId === channelId) { // Only process messages for the active channel
+                if (receivedMessage.sender_id === userId) { // Only process messages for the active channel
                     setMessageQueue((prevQueue) => [...prevQueue, receivedMessage]);
                     if (encryptionIntialized && !isProcessing) {
                         handleMessageQueue();

@@ -1,6 +1,7 @@
 import uuid
 from pathlib import Path
 from firebase_admin import storage
+from urllib.parse import unquote
 
 async def upload_file_to_firebase(file, file_name : str, folder_name : str ) -> str:
     try:
@@ -28,11 +29,18 @@ def delete_file_from_firebase(file_url: str):
         # Extract the file name from the URL
         bucket = storage.bucket()
 
+        if file_url.find("https://storage.googleapis.com/kychat-6502c.appspot.com/") == -1:
+            print("file not found")
+            return
+
         base_url = "https://storage.googleapis.com/kychat-6502c.appspot.com/"
         file_path = file_url.replace(base_url, "")
         
-        blob = bucket.blob(file_path)
-        print(blob)
+        decoded_file_path = unquote(file_path)  # Decode the URL-encoded file path
+        
+        # Reference the blob (file) in Firebase Storage
+        blob = bucket.blob(decoded_file_path)
+        
         if not blob:
             print("file not found")
             return
