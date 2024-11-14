@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { useNavigate, useParams, Outlet } from 'react-router-dom';
+import { useNavigate, useParams, Outlet,} from 'react-router-dom';
 import './layout.scss';
 import { User, Settings, KeyRound } from 'lucide-react';
 import axiosInstance from '../../axiosInstance.js';
 import webSocketService from '../../websocket.js';
 
-// Lazily load components
 const ChatPage = lazy(() => import('../chatPage/chatPage.js'));
 const ChatsPage = lazy(() => import('../chats/chatsPage.js'));
 const CreateChatDialog = lazy(() => import('../../dialogs/create_chat/create_chat.js'));
@@ -13,7 +12,6 @@ const JoinChatDialog = lazy(() => import('../../dialogs/join_chat/join_chat.js')
 const EditProfileDialog = lazy(() => import('../../dialogs/profile_update/profile_update.js'));
 const ProfilePage = lazy(() => import('../../dialogs/profile/profile.js'));
 
-// Custom loading component
 const LoadingPlaceholder = ({ type }) => (
   <div className={`loading-placeholder ${type}`}>
     <div className="loading-animation"></div>
@@ -27,10 +25,10 @@ const Layout = () => {
     isEditProfileOpen: false,
     isProfileOpen: false
   });
-  
+
   const [profileDetails, setProfileDetails] = useState(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
-  const { chatId, userId } = useParams();
+  const { userId } = useParams();
   const navigate = useNavigate();
 
   const toggleDialog = useCallback((dialogName) => {
@@ -92,7 +90,8 @@ const Layout = () => {
             <div className='mobile-view'>
               <Suspense fallback={<LoadingPlaceholder type="chat" />}>
                 <ChatPage 
-                  user_id={chatId} 
+                  key={userId} // Add key here to trigger remount on userId change
+                  userId={userId} 
                   onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
                   onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
                   className="chatBox" 
@@ -116,21 +115,36 @@ const Layout = () => {
             </div>
           )
         ) : (
+          userId ? (
+            <>
+              <Suspense fallback={<LoadingPlaceholder type="chats" />}>
+                <ChatsPage 
+                  onSelectChat={handleSelectChat} 
+                  className="chats"
+                />
+              </Suspense>
+              <Suspense fallback={<LoadingPlaceholder type="chat" />} key={userId}>
+                <ChatPage 
+                  key={userId} // Add key here to trigger remount on userId change
+                  userId={userId} 
+                  onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
+                  onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
+                  className="chatBox" 
+                />
+              </Suspense>
+            </>
+          ) : 
           <>
-            <Suspense fallback={<LoadingPlaceholder type="chats" />}>
-              <ChatsPage 
-                onSelectChat={handleSelectChat} 
-                className="chats"
-              />
-            </Suspense>
-            <Suspense fallback={<LoadingPlaceholder type="chat" />}>
-              <ChatPage 
-                user_id={chatId} 
-                onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
-                onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
-                className="chatBox" 
-              />
-            </Suspense>
+              <Suspense fallback={<LoadingPlaceholder type="chats" />}>
+                <ChatsPage 
+                  onSelectChat={handleSelectChat} 
+                  className="chats"
+                />
+              </Suspense>
+              <div className="start-chat-container">
+                <button className='start-chat-button' onClick={()=>toggleDialog('isCreateDialogOpen')}>Create Channel</button>
+                <button className='join-chat-button' onClick={()=>toggleDialog('isJoinDialogOpen')}>Join Channel</button>
+              </div>
           </>
         )}
       </div>
