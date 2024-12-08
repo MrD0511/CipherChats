@@ -28,6 +28,7 @@ async function exportPrivateKey(keyPair){
 async function getPublicKey(channel_id, partner_id) {
     try{
         const response = await axiosInstance.post(`/chat/get_public_key`, {channel_id : channel_id, partner_id : partner_id})
+        
         if(response.status === 200){
             return response.data.public_key
         }else{
@@ -35,7 +36,7 @@ async function getPublicKey(channel_id, partner_id) {
         }        
     }catch(err){
         console.log(err)
-        return Error(String(err))
+        return null
     }
 }
 

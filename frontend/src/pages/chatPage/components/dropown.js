@@ -1,15 +1,53 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   EllipsisVertical,
   Lock,
   Unlock,
   Trash2
 } from 'lucide-react';
+import { useWebSocket } from '../../../websocketContext';
+import axiosInstance from '../../../axiosInstance';
 
-const EllipsisButton = ({ toggleE2ee, isE2ee }) => {
+const EllipsisButton = ({ userId, addStatus }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { enable_e2ee, disable_e2ee } = useWebSocket()
+  const [isE2ee, setIsE2ee] = useState(false)
+  const { messageEmmiter } = useWebSocket()
 
-  React.useEffect(() => {
+
+  useEffect(()=>{
+    const get_e2ee_status = async () => {
+      await axiosInstance.get(`/get_e2ee_status/${userId}`).then((response) => {
+        setIsE2ee(response.data.isE2ee)
+      }).catch((e)=>{
+        console.log("error getting e2ee status : ", e)
+      })
+    }
+
+    messageEmmiter.on('onE2eeToggle', (data)=>{
+      if(data.type === "e2eeEvent"){
+        setIsE2ee(data.status)
+      }
+    })
+
+    get_e2ee_status();
+
+    return () => {
+      messageEmmiter.off('onE2eeToggle', (data)=>{
+        if(data.event === "e2eeEvent"){
+          setIsE2ee(data.status)
+        }
+      });
+  };
+  },[userId, setIsE2ee, messageEmmiter])
+
+
+
+  useEffect(() => {
+      // console.log("Updated isE2ee:", isE2ee);
+  }, [isE2ee]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.ellipsis-container')) {
         setIsOpen(false);
@@ -43,8 +81,15 @@ const EllipsisButton = ({ toggleE2ee, isE2ee }) => {
               type="checkbox"
               className="sr-only peer"
               checked={isE2ee}
-              onChange={() => {
-                toggleE2ee();
+              onChange={(event) => {
+                setIsE2ee(event.target.checked)
+                if (event.target.checked) {
+                  enable_e2ee()
+                  addStatus("End to End encryption enabled")
+                } else {
+                  disable_e2ee()
+                  addStatus("End to End encryption disabled")
+                }
               }}
             />
             <div

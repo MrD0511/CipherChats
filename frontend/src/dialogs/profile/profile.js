@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { X, Settings, LogOut, Trash2, Edit2, UserCircleIcon } from 'lucide-react';
 import './profile.scss';
-import axiosInstance from '../../axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
 

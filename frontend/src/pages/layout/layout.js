@@ -3,7 +3,7 @@ import { useNavigate, useParams, Outlet,} from 'react-router-dom';
 import './layout.scss';
 import { User, Settings, KeyRound } from 'lucide-react';
 import axiosInstance from '../../axiosInstance.js';
-import webSocketService from '../../websocket.js';
+// import webSocketService from '../../websocket.service.js';
 
 const ChatPage = lazy(() => import('../chatPage/chatPage.js'));
 const ChatsPage = lazy(() => import('../chats/chatsPage.js'));
@@ -31,18 +31,13 @@ const Layout = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
 
+
   const toggleDialog = useCallback((dialogName) => {
     setDialogStates(prevState => ({
       ...prevState,
       [dialogName]: !prevState[dialogName]
     }));
   }, []);
-
-  useEffect(()=>{
-    const websocket_url = process.env.REACT_APP_WEBSOCKET_URL;
-    const token = localStorage.getItem('access_token');
-    webSocketService.connect(`${websocket_url}/ws/chat?token=${token}`)
-  },[])
 
   const handleSelectChat = useCallback((id) => {
     navigate(`/chats/${id}`);

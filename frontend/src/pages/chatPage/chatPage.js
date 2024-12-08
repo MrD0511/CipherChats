@@ -4,103 +4,19 @@ import './chatPage.scss';
 import axiosInstance from "../../axiosInstance";
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Image as ImageIcon, Send, ArrowLeft, Lock, Unlock } from 'lucide-react';
-import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from '../../e2eeManager';
+// import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from '../../e2eeManager';
 import EllipsisButton from './components/dropown';
-import { db, getMessage, addMessage } from '../../indexdb.service';
-import webSocketService from '../../websocket';
+import {  getMessage, addMessage } from '../../indexdb.service';
+import { useWebSocket } from '../../websocketContext';
 
-
-// Custom Hook for Encryption Management
-const useEncryption = (channel_id, userId) => {
-    const partner_public_key = useRef(null);
-    const user_private_key = useRef(null);
-    const isE2eeRef = useRef(false);  // Store the current E2EE state in a ref
-    const [isE2ee, setIsE2ee] = useState(false);
-    const [encryptionIntialized, setEncryptionInitialized] = useState(false);
-
-    useEffect(() => {
-        const initializeEncryption = async () => {
-            try {
-                const connectionKeys = await get_connection_keys(channel_id, userId);
-                if (connectionKeys) {
-                    partner_public_key.current = connectionKeys.partnerPublicKey;
-                    user_private_key.current = connectionKeys.privateKey;
-                } else {
-                    user_private_key.current = await create_new_connection(channel_id);
-                }
-                setEncryptionInitialized((prevState)=>{
-                    const newVal = !prevState;
-                    return newVal;
-                })
-            } catch (error) {
-                console.error("Error initializing encryption:", error);
-            }
-        };
-
-        if (channel_id && userId) {
-            initializeEncryption();
-        }
-    }, [channel_id, userId]);
-
-    const send_enable_e2ee_req = async (channel_id, userId, newIsE2ee) => {
-        try {
-            const response = await axiosInstance.patch(`/enable_e2ee/${channel_id}`, { isE2ee: newIsE2ee });
-            if (response.status === 200) {
-                await db.isE2ee.update(channel_id, { isActive: newIsE2ee });
-                if (newIsE2ee) {
-                    const connectionKeys = await get_connection_keys(channel_id, userId);
-                    partner_public_key.current = connectionKeys.partnerPublicKey;
-                    user_private_key.current = connectionKeys.privateKey;
-                }
-            }
-        } catch (error) {
-            console.error("Error toggling E2EE:", error);
-        }
-    };
-
-    const toggleEncryption = (remote=false) => {
-        const newIsE2ee = !isE2ee;
-        isE2eeRef.current = newIsE2ee; // Update the ref immediately
-        setIsE2ee(newIsE2ee); // This triggers re-render but won't block the execution
-        if(!remote){
-            send_enable_e2ee_req(channel_id, userId, newIsE2ee);
-        }
-    };
-    
-    const handleRemoteE2eeToggle = async (e2eeFlag) => {
-        isE2eeRef.current = e2eeFlag;
-        setIsE2ee(e2eeFlag);
-    }
-
-    const encryptMessage = async (message) => {
-        if (!isE2eeRef.current) return message;
-        try {
-            return await encrypt_message(partner_public_key.current, message);
-        } catch (error) {
-            console.error("Encryption error:", error);
-            return message;
-        }
-    };
-
-    const decryptMessage = async (message) => {
-        if (!isE2eeRef.current) return message;
-        try {
-            return await decrypt_message(user_private_key.current, message);
-        } catch (error) {
-            console.error("Decryption error:", error);
-            return message;
-        }
-    };
-
-    return { isE2ee, encryptionIntialized, toggleEncryption, handleRemoteE2eeToggle,encryptMessage, decryptMessage };
-};
 
 // ChatInput Component
-const ChatInput = ({ userId, handleMessage}) => {
+const ChatInput = ({ userId, handleMessage, channel_id}) => {
     const [inputValue, setInputValue] = useState('');
     const textAreaRef = useRef(null);
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeout = useRef(null);
+    const {sendEvent} = useWebSocket();
 
     useEffect(() => {
         if (textAreaRef.current) {
@@ -113,7 +29,7 @@ const ChatInput = ({ userId, handleMessage}) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             clearTimeout(typingTimeout.current);
-            webSocketService.sendMessage({ event: "typing", recipient_id: userId })
+            sendEvent({ event: "typing", recipient_id: userId, channel_id: channel_id });
             handleMessage(inputValue);
             setInputValue("");
         }
@@ -121,15 +37,16 @@ const ChatInput = ({ userId, handleMessage}) => {
     
 
     const userTyping = () => {
+
         if (!isTyping) {
             setIsTyping(true);
-            webSocketService.sendMessage({ event: "typing", recipient_id: userId });
+            sendEvent({ event: "typing", recipient_id: userId, channel_id : channel_id });
         }
 
         clearTimeout(typingTimeout.current);
         typingTimeout.current = setTimeout(() => {
             setIsTyping(false);
-            webSocketService.sendMessage({ event: "stop_typing", recipient_id: userId });
+            sendEvent({ event: "stop_typing", recipient_id: userId, channel_id: channel_id });
         }, 2000);
     };
 
@@ -155,7 +72,7 @@ const ChatInput = ({ userId, handleMessage}) => {
 };
 
 // ChatBox Component
-const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages }) => {
+const ChatBox = ({ userId, messages, recipientTyping, fetchMessages }) => {
     const chatBoxRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [finished, setFinished] = useState(false);
@@ -165,6 +82,7 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
     }, [messages]);
+
 
     const handleScroll = useCallback( async () => {
         const chatbox = chatBoxRef.current;
@@ -177,7 +95,6 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
             setLoading(false);
         }
     },[setLoading, fetchMessages, loading, setFinished])
-
 
     useEffect(() => {
         const chatBox = chatBoxRef.current;
@@ -205,10 +122,10 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
         </>
     );
 
-    const statusMessage = (message, id) => {
+    const statusMessage = (message, index) => {
         return (
             <>
-                <div className='chat-status' key={id}>
+                <div className='chat-status' key={index}>
                     {
                         message.lock ? <span><Lock className='icon'/> {message.message}</span> : <span><Unlock className='icon'/> {message.message}</span>
                     }
@@ -219,14 +136,15 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
     
     return (    
         <div className="chat-box" ref={chatBoxRef}>
-            {messages.map((message) => (
-                message.type === "status" ? statusMessage(message, message.id) :
-                <div key={message.id} className={message?.sender_id === userId ? "messageSender" : "Mymessage"}>
-                    <div className="message-content">
-                        {renderMessageContent(message)}
+            {messages.map((message, index) => (
+                message.type === "status" ? statusMessage(message, index) : (
+                    <div key={index} className={message?.sender_id === userId ? "messageSender" : "Mymessage"}>
+                        <div className="message-content">
+                            {renderMessageContent(message)}
+                        </div>
+                        <span className="timestamp">{renderTimestamp(message.timestamp)}</span>
                     </div>
-                    <span className="timestamp">{renderTimestamp(message.timestamp)}</span>
-                </div>
+                )
             ))}
             {recipientTyping && <div className="messageSender typing-indicator">typing...</div>}
         </div>
@@ -234,9 +152,10 @@ const ChatBox = ({ userId, messages, recipientTyping, fetchMessages, setMessages
 };
 
 // PartnerDetails Component
-const PartnerDetails = ({ userId, toggleE2ee, isE2ee, onChannel_id, handleRemoteE2eeToggle }) => {
+const PartnerDetails = ({ userId, onChannel_id, addE2eeStatus }) => {
     const [senderDetails, setSenderDetails] = useState(null);
     const navigate = useNavigate();
+    const { activeChannel } = useWebSocket();
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -244,15 +163,16 @@ const PartnerDetails = ({ userId, toggleE2ee, isE2ee, onChannel_id, handleRemote
                 await axiosInstance.get(`/chat/get_chat/${userId}`).then((response)=>{
                     setSenderDetails(response.data?.sender_details);
                     onChannel_id(response.data?.channel_id);
-                    handleRemoteE2eeToggle(response.data?.isE2ee)
+                    activeChannel.current = response.data?.channel_id;
+                }).catch((e)=>{
+                    if (e.status === 404) navigate("/404notFound");
                 });
             } catch (e) {
-                if (e.response.status === 404) navigate("/404notFound");
-                else navigate('/');
+                console.log(e);
             }
         };
         if (userId) fetchDetails();
-    }, [userId, onChannel_id, navigate, handleRemoteE2eeToggle]);
+    }, [userId, onChannel_id, navigate, activeChannel ]);
 
     return (
         <div className='sender'>
@@ -262,7 +182,7 @@ const PartnerDetails = ({ userId, toggleE2ee, isE2ee, onChannel_id, handleRemote
                 <span>{senderDetails?.name}</span>
             </div>
             <div className='options'>
-                <EllipsisButton toggleE2ee={toggleE2ee} isE2ee={isE2ee} />
+                <EllipsisButton addStatus={ (status) => { addE2eeStatus(status) } } userId={userId} />
             </div>
         </div>
     );
@@ -315,104 +235,61 @@ const ChatPage = ({userId}) => {
     const [messages, setMessages] = useState([]);
     const [channelId, setChannelId] = useState('');
     const [recipientTyping, setRecipientTyping] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [messageQueue, setMessageQueue] = useState([]);
-
-    const { isE2ee, encryptionIntialized, toggleEncryption, handleRemoteE2eeToggle, encryptMessage, decryptMessage } = useEncryption(channelId, userId);
+    const { messageEmmiter, sendMessage } = useWebSocket()
     const { fetchMessages } = FetchAllMessages({ channel_id: channelId, setMessages });
 
-    const handleIncomingMessages = useCallback(async (receivedMessage) => {
-        receivedMessage.message = await decryptMessage(receivedMessage.message);
-        receivedMessage.type = 'message';
-        
-        if (recipientTyping) setRecipientTyping(false);
-        
-        setMessages((prevMessages) => [...prevMessages, receivedMessage]);
-
-        await addMessage(channelId, receivedMessage.message, receivedMessage.sender_id, receivedMessage.recipient_id, receivedMessage.timestamp, receivedMessage.type);
-    }, [decryptMessage, recipientTyping, channelId]);
-
-    const handleMessageQueue = useCallback(async () => {
-        if (isProcessing || !messageQueue.length) return;
-
-        setIsProcessing(true);
-        const message = messageQueue[0];
-
-        try {
-            if (message.message) {
-                await handleIncomingMessages(message);
-            } else if (message.isE2ee !== undefined) {
-                await handleRemoteE2eeToggle(message.isE2ee);
-                setMessages((prev) => [
-                    ...prev,
-                    { type: "status", message: message.isE2ee ? "End to end encryption Enabled" : "End to end encryption Disabled", lock: message.isE2ee }
-                ]);
-                await addMessage(channelId, message.isE2ee ? "End to end encryption Enabled" : "End to end encryption Disabled", null, null, null, 'status');
-            } else if (message.event) {
-                setRecipientTyping(message.event === "typing");
-            }
-        } catch (err) {
-            console.error("Error processing queue:", err);
-        } finally {
-            setMessageQueue((prevQueue) => prevQueue.slice(1));
-            setIsProcessing(false);
-        }
-    }, [handleIncomingMessages, handleRemoteE2eeToggle, isProcessing, messageQueue, channelId]);
-
     useEffect(() => {
-        if (encryptionIntialized && messageQueue.length) {
-            handleMessageQueue();
-        }
-    }, [encryptionIntialized, isProcessing, messageQueue, handleMessageQueue]);
-
-    useEffect(() => {
-        // WebSocket message handler
-        const handleWebSocketMessage = async (event) => {
-            try {
-                const receivedMessage = JSON.parse(event.data);
-                if (receivedMessage.sender_id === userId) { // Only process messages for the active channel
-                    setMessageQueue((prevQueue) => [...prevQueue, receivedMessage]);
-                    if (encryptionIntialized && !isProcessing) {
-                        handleMessageQueue();
-                    }
-                }
-            } catch (error) {
-                console.error("Error processing incoming WebSocket message:", error);
+    
+        const handleIncomingMessages = (data) => {
+            if (data.type === 'message'|| data.type === 'status') {
+                setRecipientTyping(false);
+                setMessages((prev) => [...prev, data]);
             }
         };
-
-        webSocketService.socket.onmessage = handleWebSocketMessage;
-
+    
+        // Add the listener
+        messageEmmiter.on('onMessage', handleIncomingMessages);
+        messageEmmiter.on('onEvent', (data)=>{
+            if(data.event === "typing"){
+                setRecipientTyping(true);
+            }else if(data.event === "stop_typing"){
+                setRecipientTyping(false);
+            }
+        })
+        // Cleanup the listener on unmount or when `channelId` changes
         return () => {
-            webSocketService.socket.onmessage = null; // Cleanup WebSocket on component unmount
+            messageEmmiter.off('onMessage', handleIncomingMessages);
+            messageEmmiter.off('onEvent', (data)=>{
+                if(data.event === "typing"){
+                    setRecipientTyping(true);
+                }else if(data.event === "stop_typing"){
+                    setRecipientTyping(false);
+                }
+            })
         };
-    }, [encryptionIntialized, isProcessing, messageQueue, handleMessageQueue, channelId]);
+    }, [channelId, messageEmmiter, setRecipientTyping]); // Re-run only when `channelId` changes
+    
 
     const handleMessage = async (inputValue) => {
         if (inputValue.trim()) {
             const timestamp = new Date().toISOString();
             const message = { message: inputValue, recipient_id: userId, timestamp: timestamp };
             setMessages((prevMessages) => [...prevMessages, message]);
-            webSocketService.sendMessage({ message: await encryptMessage(inputValue), recipient_id: userId, timestamp: timestamp });
+            sendMessage(inputValue, userId, timestamp, channelId );
             await addMessage(channelId, inputValue, null, userId, timestamp, 'message');
         }
     };
+
+    const addE2eeStatus = async (status) => {
+        setMessages([...messages, { message : status, type: 'status', timestamp: new Date().toISOString() }])
+    }
 
     return (
         <div className="chat-container">
             <PartnerDetails
                 userId={userId}
-                isE2ee={isE2ee}
-                toggleE2ee={() => {
-                    toggleEncryption();
-                    setMessages((prev) => [
-                        ...prev,
-                        { type: "status", message: !isE2ee ? "End to end encryption Enabled" : "End to end encryption Disabled", lock: !isE2ee }
-                    ]);
-                    addMessage(channelId, !isE2ee ? "End to end encryption Enabled" : "End to end encryption Disabled", null, null, null, 'status');
-                }}
                 onChannel_id={setChannelId}
-                handleRemoteE2eeToggle={handleRemoteE2eeToggle}
+                addE2eeStatus={(status) =>{  addE2eeStatus(status) }}
             />
             <ChatBox
                 key={userId}
@@ -422,7 +299,7 @@ const ChatPage = ({userId}) => {
                 fetchMessages={fetchMessages}
                 setMessages={setMessages}
             />
-            <ChatInput userId={userId} handleMessage={handleMessage} />
+            <ChatInput userId={userId} handleMessage={handleMessage} channel_id={channelId} />
         </div>
     );
 };
