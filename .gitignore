@@ -2,6 +2,7 @@ frontend/node_modules
 frontend/.pnp
 frontend/.env
 backend/env
+backend/.env
 .pnp.js
 backend/app/__pycache__
 backend/app/db/__pycache__
@@ -15,7 +16,11 @@ backend/app/websocket/__pycache__
 /coverage
 
 # production
-# frontend/build
+frontend/build
+frontend/dist
+frontend/.env.production
+frontend/.env.development
+
 
 # misc
 .DS_Store
