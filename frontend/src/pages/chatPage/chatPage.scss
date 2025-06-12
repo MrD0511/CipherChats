@@ -1,3 +1,4 @@
+
 $background-dark: #000000;
 $background-light: #0f131e;
 $accent-color: #8a2be2;
@@ -58,7 +59,7 @@ $secondary-color: #3f3f5f;
     }
   
     &::-webkit-scrollbar-thumb {
-      background-color: $accent-color;
+      background-color: $background-light;
       border-radius: 3px;
     }
   
@@ -177,7 +178,6 @@ $secondary-color: #3f3f5f;
     }
 
     button {
-      padding: 10px;
       background-color: $accent-color;
       color: white;
       border: none;

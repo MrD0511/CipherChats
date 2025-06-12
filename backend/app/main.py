@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import chat_router, auth_router, user_router
+from .routes import chat_router, auth_router, user_router, file_router
 from .websocket import websocket_router
 from .firebase import firebase_app
 
@@ -26,3 +26,4 @@ app.include_router(chat_router)
 app.include_router(websocket_router)
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(file_router)

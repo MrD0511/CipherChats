@@ -82,6 +82,7 @@ async def get_public_key(request : get_public_key_model, user : dict = Depends(u
         print("get_public_key: ",e)
         raise HTTPException(status_code=500, detail="Internal error")
     
+
 @router.get('/chat/get_chat/{id}')
 async def get_chat(id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
@@ -109,6 +110,7 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
     except Exception as e:
         print("get_chat : ",e)
         raise HTTPException(status_code=500, detail="Internal server error")
+
 
 @router.get('/chat/create')
 async def create_chat(user : dict = Depends(user_auth_services.get_current_user)):
@@ -161,6 +163,7 @@ async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_cur
         raise http_exc  
     except Exception as e:
         print("join_chat : ",e)
+
 
 @router.get('/chat/get_chats')
 async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):

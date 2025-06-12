@@ -2,7 +2,6 @@ from fastapi import APIRouter, UploadFile, File, Form
 from fastapi import Depends, HTTPException
 from ..db import get_collection
 from ..services import user_auth_services
-from typing import Optional
 from ..services import  user_auth_services
 from ..firebase_utils import upload_file_to_firebase, delete_file_from_firebase
 from bson import ObjectId

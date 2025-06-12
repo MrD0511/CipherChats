@@ -38,6 +38,7 @@ class connection_manager:
             await chat_service.queue_message(sender_id, recipient_id, { "isE2ee" : isE2ee, "channel_id" : channel_id }, 'e2ee')
 
     async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
+        print(self.active_connections)
         if recipient_id in self.active_connections:
             recipient_socket = self.active_connections[recipient_id]
             await recipient_socket.send_json(message)
@@ -51,6 +52,7 @@ async def chat_websocket(websocket : WebSocket):
 
     token = websocket.query_params.get("token")
     user = await user_auth_services.get_current_user(token)
+    print(f"User connected: {user['sub']}")
     await manager.connect(websocket, user['sub'])
     try:
 
@@ -59,19 +61,16 @@ async def chat_websocket(websocket : WebSocket):
             data = json.loads(message['message'])
             data['recipient_id'] = message['recipient_id']
             data['sender_id'] = message['sender_id']
-            print(data)
+            
             await websocket.send_json(data)
             queued_messages_collection.delete_one({ "_id" : ObjectId(message['_id']) })
 
         while True:
             data = await websocket.receive_text()
             data = json.loads(data)
-            
-            if data.get('message'):
-                await manager.send_message_to_user({ "message" : data['message'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id'], "timestamp" : data.get('timestamp'), "channel_id" : data.get('channel_id') }, user['sub'], data['recipient_id'])
-            
-            elif data.get('event'):
-                await manager.send_message_to_user({ "event" : data.get("event"), "sender_id" : user['sub'], "channel_id" : data.get('channel_id') }  , user['sub'], data['recipient_id'])
+
+            await manager.send_message_to_user({"message_id": data.get('message_id'), "channel_id": data['channel_id'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id'], "type": data.get('type'), "sub_type": data.get('sub_type'), "message": data.get('message'), "message_type": data.get('message_type'), "file_name": data.get('file_name'), "file_url": data.get('file_url'), "timestamp" : data.get('timestamp'), "file_exp" : data.get('file_exp'), "file_size": data.get('file_size')}, user['sub'], data['recipient_id'])
+
     except Exception as err:
         manager.disconnect(user['sub'])
         print(f"User disconnected", err)
