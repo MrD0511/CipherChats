@@ -1,6 +1,5 @@
 frontend/node_modules
 frontend/.pnp
-frontend/.env
 backend/env
 backend/.env
 .pnp.js
@@ -11,15 +10,15 @@ backend/app/services/__pycache__
 backend/__pycache__
 backend/app/routes/__pycache__
 backend/app/websocket/__pycache__
+frontend/build
+frontend/dist
+frontend/.env.production
+frontend/.env.development
 
 # testing
 /coverage
 
 # production
-frontend/build
-frontend/dist
-frontend/.env.production
-frontend/.env.development
 
 
 # misc
