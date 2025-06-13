@@ -266,9 +266,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙋‍♂️ Author
 
 **Dhruv Sharma**
-- 🔗 [LinkedIn](https://linkedin.com/in/dhruvsharma)
-- 🐙 [GitHub](https://github.com/dhruvsharma)
-- ✉️ [Email](mailto:contact@dhruvsharma.dev)
+- 🔗 [LinkedIn](https://linkedin.com/in/dhruvsharma005)
+- 🐙 [GitHub](https://github.com/MrD0511)
+- ✉️ [Email](mailto:sharmadhruv00005@gmail.com)
 
 ## 🌟 Support
 
