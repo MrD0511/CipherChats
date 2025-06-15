@@ -7,3 +7,10 @@ class store_public_key_model(BaseModel):
 class get_public_key_model(BaseModel):
     channel_id : str
     partner_id : str
+
+class create_channel_model(BaseModel):
+    note: str
+
+class create_channel_response_model(BaseModel):
+    channel_id: str
+    key: str

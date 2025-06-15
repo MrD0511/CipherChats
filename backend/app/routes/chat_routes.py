@@ -6,7 +6,7 @@ from bson import ObjectId, json_util
 import json
 from datetime import datetime
 from ..services import chat_service
-from ..models import store_public_key_model, get_public_key_model
+from ..models import store_public_key_model, get_public_key_model, create_channel_model, create_channel_response_model
 from ..websocket import manager
 
 router = APIRouter()
@@ -15,6 +15,7 @@ user_collection = get_collection('user')
 messages_collection = get_collection('messages')
 public_keys_collection = get_collection('public_keys')
 channels_collection = get_collection('channels')
+
 
 @router.post('/chat/store_public_key')
 async def store_public_key(request : store_public_key_model, user : dict = Depends(user_auth_services.get_current_user)):
@@ -112,8 +113,8 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get('/chat/create')
-async def create_chat(user : dict = Depends(user_auth_services.get_current_user)):
+@router.post('/chat/create', response_model=create_channel_response_model)
+async def create_chat(create_channel: create_channel_model, user : dict = Depends(user_auth_services.get_current_user)):
     try:
         
         user_data = await user_auth_services.get_user_by_username(user['sub'])
@@ -123,7 +124,8 @@ async def create_chat(user : dict = Depends(user_auth_services.get_current_user)
         channel = await channels_collection.insert_one({
             "key" : random_key,
             "user_id" : user_data['_id'],
-            "createdAt" : datetime.now(),
+            "note" : create_channel.note,
+            "createdAt" : datetime.now()
         })
 
         return { "key" : random_key, "channel_id" : str(channel.inserted_id)}
@@ -133,6 +135,7 @@ async def create_chat(user : dict = Depends(user_auth_services.get_current_user)
     except Exception as e:
         print("create_chat : ",e)
 
+
 @router.post('/chat/join')
 async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_current_user)):
     try:
@@ -141,6 +144,9 @@ async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_cur
 
         if not channel_record:
             raise HTTPException(status_code=404, detail="Key doesn't match.") 
+        
+        if channel_record['user_id'] == user_data['_id']:
+            raise HTTPException(status_code=400, detail="You cannot join your own channel.")
         
         await channels_collection.update_one({
             "key" : key['key'] 
@@ -229,6 +235,7 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
     except Exception as e:
         print("get_chats : ",e)
 
+
 @router.get('/chat/delete/{sender_id}')
 async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
@@ -250,6 +257,7 @@ async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.
     except Exception as e:
         print("delete chat: ",e)
         raise  HTTPException(status_code=500, detail="Internal Server error")
+
 
 @router.patch('/enable_e2ee/{channel_id}')
 async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_services.get_current_user)):
@@ -291,8 +299,18 @@ async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_s
             }
         ]).to_list()
         
-        await manager.send_e2ee_activation_notification(str(partner_id[0]['partner_id']), data['isE2ee'], channel_id, str(user_data['_id']))
-        
+        # await manager.send_e2ee_activation_notification(str(partner_id[0]['partner_id']), data['isE2ee'], channel_id, str(user_data['_id']))
+        await manager.send_message_to_user(
+        {
+            "channel_id": channel_id,
+            "sender_id": str(user_data['_id']),
+            "recipient_id": str(partner_id[0]['partner_id']),
+            "type": "e2ee_status",
+            "sub_type": "enable" if data["isE2ee"] else "disable",
+            "message": "",
+            "timestamp": datetime.now().isoformat(),
+        }, str(user_data['_id']), str(partner_id[0]['partner_id']))
+
         return {
             "msg" : "E2ee toggled successfully"
         }
@@ -302,6 +320,7 @@ async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_s
     except Exception as e:
         print(e.with_traceback)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @router.get('/get_e2ee_status/{id}')
 async def get_e2ee_status(id : str, user : dict = Depends(user_auth_services.get_current_user)):

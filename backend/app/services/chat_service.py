@@ -20,17 +20,9 @@ async def genrate_key(length=16):
         if not exists:
             return key
 
-async def queue_message(sender_id, recipient_id, message, type):
-    message_data = {
-        'sender_id': sender_id,
-        'recipient_id': recipient_id,
-        'message': json.dumps(message),
-        'status': 'queued',
-        'timestamp': message.get('timestamp'),
-        'type' : type,
-    }
-    await queued_messages_collection.insert_one(message_data)
+async def queue_message(message):
+    await queued_messages_collection.insert_one(message)
 
 async def get_pending_messages(recipient_id):
-    pending_messages = await queued_messages_collection.find({'recipient_id': recipient_id, 'status': 'queued'}).to_list()
+    pending_messages = await queued_messages_collection.find({'recipient_id': recipient_id}).to_list()
     return pending_messages
