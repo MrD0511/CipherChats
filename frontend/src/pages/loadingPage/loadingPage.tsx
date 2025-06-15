@@ -2,20 +2,20 @@ import React, { useEffect, useState } from 'react';
 
 const LoadingPage = () => {
   const [progress, setProgress] = useState(0);
-  const [glitchText, setGlitchText] = useState('CIPHERLINK');
+  const [glitchText, setGlitchText] = useState('CIPHERCHATS');
 
   // Simple glitch effect
   useEffect(() => {
     const glitchInterval = setInterval(() => {
       if (Math.random() > 0.8) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const glitched = 'CIPHERLINK'.split('')
+        const glitched = 'CIPHERCHATS'.split('')
           .map(char => Math.random() > 0.8 ? chars[Math.floor(Math.random() * chars.length)] : char)
           .join('');
         setGlitchText(glitched);
         
         // Reset after short delay
-        setTimeout(() => setGlitchText('CIPHERLINK'), 100);
+        setTimeout(() => setGlitchText('CIPHERCHATS'), 100);
       }
     }, 2000);
 

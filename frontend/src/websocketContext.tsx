@@ -1,6 +1,6 @@
 import EventEmitter from "events"
 import { useContext, useRef, useState, useEffect, createContext, useCallback } from "react"
-import { addMessage } from "./indexdb.service"
+import { addMessage, db } from "./indexdb.service"
 import encryptionService from "./encryption.service";
 import { Message, sendingMessage } from "./interfaces/Message";
 
@@ -38,13 +38,11 @@ function useMessageHandler(){
             e2eeHandlerInstance = new encryptionService(message.sender_id, message.channel_id);
             await e2eeHandlerInstance.initialize();
             usersMap.current.set(message.channel_id, e2eeHandlerInstance)
-
           }
     
           if (message.type == "message") {
     
               const decryptedMessage = await e2eeHandlerInstance.decryptMessage(message.message)
-              if(activeChannel.current === message.channel_id) messageEmmiter.current.emit('onMessage', {id: message.id, channel_id: message.channel_id, sender_id: message.sender_id, recipient_id: message.recipient_id, type: message.type, sub_type: message.sub_type, message: decryptedMessage, message_type: message.message_type, file_name: message.file_name, file_url: message.file_url, timestamp: message.timestamp, file_exp: message.file_exp});
               const messageData : Message = {
                 message_id: message.message_id,
                 channel_id: message.channel_id,
@@ -59,17 +57,15 @@ function useMessageHandler(){
                 status: message.status || "",
                 timestamp: message.timestamp,
                 file_size: message.file_size,
-                file_exp: message.file_exp
+                file_exp: message.file_exp,
+                replied_message_id: message.replied_message_id
               };
+              if(activeChannel.current === message.channel_id) messageEmmiter.current.emit('onMessage', messageData);
               await addMessage(messageData);
 
           } else if (message.type == "e2ee_status") {
     
               await e2eeHandlerInstance.toggleE2ee(message.isE2ee)
-              if(activeChannel.current === message.channel_id){
-                messageEmmiter.current.emit('onMessage', { id: message.id, channel_id: message.channel_id, sender_id: message.sender_id, recipient_id: message.recipient_id, type: message.type, sub_type: message.sub_type, message: message.message, message_type: message.message_type, file_name: message.file_name, file_url: message.file_url, timestamp: message.timestamp, file_exp: message.file_exp});
-                messageEmmiter.current.emit('onE2eeToggle', { status : message.isE2ee, type : "e2eeEvent" });
-              } 
               const messageData : Message = {
                 message_id: message.id,
                 channel_id: message.channel_id,
@@ -84,6 +80,10 @@ function useMessageHandler(){
                 timestamp: message.timestamp,
                 file_exp: message.file_exp
               };
+              if(activeChannel.current === message.channel_id){
+                messageEmmiter.current.emit('onMessage', messageData);
+                messageEmmiter.current.emit('onE2eeToggle', { status : message.isE2ee, type : "e2eeEvent" });
+              } 
               await addMessage(messageData);
 
           } else if (message.event) {
@@ -100,7 +100,6 @@ function useMessageHandler(){
 
     const handleSocketMessages = async (event: any) => {
         const receivedMessage = JSON.parse(event.data);
-        console.log("Received message:", receivedMessage);
         messageQueue.current.push(receivedMessage);
     
         if (!isProcessingMessageQueue.current) {
@@ -144,6 +143,7 @@ export const useWebSocket = () => {
 };
 
 import { PropsWithChildren } from "react";
+import { set } from "date-fns";
 
 export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
   const socket = useRef<WebSocket | null>(null);
@@ -156,8 +156,12 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
   const shouldReconnect = useRef(true);
   const [connectionState, setConnectionState] = useState(false);
   const messageHandler = useMessageHandler(); // Using the message handler
+  const [messageQueue, setMessageQueue] = useState<sendingMessage[]>([]);
+  const hasSentQueuedMessages = useRef(false);
+
 
   const connectRef = useRef<any>(null);
+  // connectRef.current = connect;
 
   const reconnect = useCallback(() => {
     if (reconnectAttempts.current >= maxReconnectAttempts.current) {
@@ -176,9 +180,9 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     );
 
     setTimeout(() => {
-      if (shouldReconnect.current) {
+      if (shouldReconnect.current && url.current) {
         console.log('Reconnecting...');
-        // connect(url.current); // Attempt to reconnect
+        connect(url.current); // Attempt to reconnect
         connectRef.current?.(url.current);
       }
     }, delay);
@@ -198,6 +202,12 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
       reconnectAttempts.current = 0; // Reset reconnection attempts after successful connection
       console.log('WebSocket connection established');
       setConnectionState(true);
+      if (!hasSentQueuedMessages.current) {
+        hasSentQueuedMessages.current = true;
+        setTimeout(() => {
+          sendQueuedMessages();  // small delay allows socket to stabilize
+        }, 1000);
+      }
     };
 
     socket.current.onmessage = (event) => {
@@ -208,6 +218,7 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
       isConnected.current = false;
       console.log('WebSocket connection closed');
       setConnectionState(false);
+      hasSentQueuedMessages.current = false;
       if (shouldReconnect.current && reconnectAttempts.current < maxReconnectAttempts.current) {
         reconnect();
       }
@@ -228,17 +239,68 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     connect(`${url}/ws/chat?token=${token}`)
   }, [connect]); // Empty dependency array ensures it only runs once when the hook is mounted
 
+  const getUnsendMessages = async (): Promise<sendingMessage[]> => {
+    const unsentMessages = await db.chat.where('status').equals('unsent').toArray();
+    return unsentMessages.map((message) => ({
+      message_id: message.message_id,
+      channel_id: message.channel_id,
+      sender_id: message.sender_id,
+      recipient_id: message.recipient_id,
+      type: message.type,
+      sub_type: message.sub_type || undefined,
+      message: message.message,
+      message_type: message.message_type,
+      timestamp: message.timestamp,
+      file_name: message.file_name,
+      file_url: message.file_url,
+      file_size: message.file_size,
+      file_exp: message.file_exp,
+      replied_message_id: message.replied_message_id,
+    }));
+  };
+
+  const sendQueuedMessages = async () => {
+    let queueToSend = [...messageQueue];
+
+    if (queueToSend.length === 0) {
+      queueToSend = await getUnsendMessages();
+    }
+    console.log(queueToSend);
+    if (queueToSend.length === 0) return;
+
+    const newQueue: typeof messageQueue = [];
+
+    for (const message of queueToSend) {
+      console.log("for loopp")
+      if (socket.current && socket.current.readyState === WebSocket.OPEN) {
+        console.log("if stats")
+        try {
+          console.log("Sending:", message);
+          socket.current.send(JSON.stringify(message));
+          await updateMessageStatus(message.message_id, "sent");
+        } catch (error) {
+          console.error("Error sending queued message:", error);
+          newQueue.push(message);
+        }
+      } else {
+        newQueue.push(message);
+      }
+    }
+
+    setMessageQueue(newQueue);
+  };
+
   const sendMessage = async (message: sendingMessage) => {
     if (socket.current && socket.current.readyState === WebSocket.OPEN) {
-      console.log("send message: "+ message.type);
         try {
 
             const instance = await messageHandler.getE2eeHandlerInstance(message.recipient_id);
             const encryptedMessage = await instance.encryptMessage(message.message);
             
-            const data = {
+            const data: sendingMessage = {
                 message_id: message.message_id,
                 channel_id: message.channel_id,
+                sender_id: message.sender_id,
                 recipient_id: message.recipient_id,
                 type: message.type,
                 sub_type: message.sub_type,
@@ -247,17 +309,31 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
                 timestamp: message.timestamp,
                 file_name: message.file_name,
                 file_url: message.file_url,
-                file_exp: message.file_exp
+                file_exp: message.file_exp,
+                replied_message_id: message.replied_message_id,
             };
 
             socket.current.send(JSON.stringify(data));
+            
+            updateMessageStatus(message.message_id, "sent");
         } catch (error) {
             console.error("Error sending message:", error);
+            setMessageQueue((prevQueue) => [...prevQueue, message]);
         }
     } else {
-        console.error('WebSocket is not open. Message not sent.');
+        setMessageQueue((prevQueue) => [...prevQueue, message]);
     }
   };
+
+  const updateMessageStatus = async (message_id: string, status: "sent" | "delivered" | "read") => {
+      const record =  await db.chat.get({message_id: message_id});
+      const id = record ? record.id : null;
+      if (id) {
+        await db.chat.update(id, {
+          status: status,
+        });
+      }
+  } 
 
   const sendEvent = async (data: any) => {
     if (socket.current && socket.current.readyState === WebSocket.OPEN) {

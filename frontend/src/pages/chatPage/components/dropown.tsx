@@ -11,7 +11,7 @@ import axiosInstance from '../../../axiosInstance';
 const EllipsisButton = ({ userId, addStatus }
   : {
     userId: string;
-    addStatus: (status: string) => void;
+    addStatus: (status: "enable" | "disable") => void;
   }
 ) => {
   const [isOpen, setIsOpen] = useState(false);

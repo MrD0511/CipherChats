@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useNavigate, useParams, Outlet,} from 'react-router-dom';
-import './layout.scss';
+// import './layout.scss';
 import { User, Settings, KeyRound } from 'lucide-react';
 import axiosInstance from '../../axiosInstance.js';
 // import webSocketService from '../../websocket.service.js';
@@ -12,11 +12,24 @@ const JoinChatDialog = lazy(() => import('../../dialogs/join_chat/join_chat.js')
 const EditProfileDialog = lazy(() => import('../../dialogs/profile_update/profile_update.js'));
 const ProfilePage = lazy(() => import('../../dialogs/profile/profile.js'));
 
-const LoadingPlaceholder = ({ type }) => (
-  <div className={`loading-placeholder ${type}`}>
-    <div className="loading-animation"></div>
-  </div>
-);
+type LoadingPlaceholderProps = {
+  type: 'base' | 'chats' | 'chat' | 'dialog';
+};
+
+const LoadingPlaceholder = ({ type }: LoadingPlaceholderProps) => {
+  const classes = {
+    base: "flex items-center justify-center w-full h-full bg-[#030404]",
+    chats: "col-span-1",
+    chat: "col-span-1",
+    dialog: "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[200px] z-[1000] rounded-md",
+  };
+
+  return (
+    <div className={`${classes.base} ${classes[type] || ""}`}>
+      <div className="w-12 h-12 animate-spin rounded-full border-4 border-t-violet-700 border-gray-900"></div>
+    </div>
+  );
+};
 
 const Layout = () => {
   const [dialogStates, setDialogStates] = useState({
@@ -26,25 +39,39 @@ const Layout = () => {
     isProfileOpen: false
   });
 
-  const [profileDetails, setProfileDetails] = useState(null);
+  const [profileDetails, setProfileDetails] = useState<ProfileDetails | null>(null);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
   const { userId } = useParams();
   const navigate = useNavigate();
 
+  interface DialogStates {
+    isCreateDialogOpen: boolean;
+    isJoinDialogOpen: boolean;
+    isEditProfileOpen: boolean;
+    isProfileOpen: boolean;
+  }
 
-  const toggleDialog = useCallback((dialogName) => {
-    setDialogStates(prevState => ({
+  type DialogName = keyof DialogStates;
+
+  interface ProfileDetails {
+    profile_url?: string;
+    [key: string]: any;
+  }
+
+  const toggleDialog = useCallback((dialogName: DialogName) => {
+    setDialogStates((prevState: DialogStates) => ({
       ...prevState,
       [dialogName]: !prevState[dialogName]
     }));
   }, []);
 
-  const handleSelectChat = useCallback((id) => {
+  const handleSelectChat = useCallback((id: string) => {
     navigate(`/chats/${id}`);
   }, [navigate]);
 
   const handleResize = useCallback(() => {
     setIsMobileView(window.innerWidth <= 768);
+    console.log('Window resized:', window.innerWidth);
   }, []);
 
   useEffect(() => {
@@ -64,90 +91,168 @@ const Layout = () => {
     };
   }, [handleResize]);
 
-  return (
-    <>
-      <div className="chat-layout">
-        <div className="side-bar">
-          <div className="options">
-            <div><Settings className='icon' /></div>
-            <div><KeyRound className='icon' /></div>
-            <div onClick={() => toggleDialog('isProfileOpen')}>
-              {profileDetails?.profile_url ? 
-                <img className="profile_photo" src={profileDetails.profile_url} alt='profile' />
-                : <User />
-              }
-            </div>
-          </div>
-        </div>
-        
-        {isMobileView ? (
-          userId ? (
-            <div className='mobile-view'>
+  // Mobile Layout
+  if (isMobileView) {
+    return (
+      <>
+        <div className="flex flex-col h-screen w-full bg-[#0e0e0e] overflow-hidden">
+          {userId ? (
+            <div className="flex-1 w-full h-full overflow-hidden">
               <Suspense fallback={<LoadingPlaceholder type="chat" />}>
-                <ChatPage 
-                  key={userId} // Add key here to trigger remount on userId change
-                  userId={userId} 
-                  onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
-                  onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
-                  className="chatBox" 
+                <ChatPage
+                  key={userId}
+                  userId={userId}
                 />
-                <Outlet />
               </Suspense>
             </div>
           ) : (
-            <div className='mobile-view'>
+            <div className="flex-1 w-full h-full overflow-hidden">
               <Suspense fallback={<LoadingPlaceholder type="chats" />}>
-                <ChatsPage 
-                  onSelectChat={handleSelectChat} 
-                  className="chats" 
-                  openProfile={() => toggleDialog('isProfileOpen')} 
-                  profile_details={profileDetails}
-                  onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
-                  onJoinChat={() => toggleDialog('isJoinDialogOpen')}  
+                <ChatsPage
+                  onSelectChat={handleSelectChat}
+                  openProfile={() => toggleDialog('isProfileOpen')}
+                  profile_details={profileDetails ?? {}}
+                  onCreateChat={() => toggleDialog('isCreateDialogOpen')}
+                  onJoinChat={() => toggleDialog('isJoinDialogOpen')}
                 />
-                <Outlet />
               </Suspense>
             </div>
-          )
-        ) : (
-          userId ? (
-            <>
-              <Suspense fallback={<LoadingPlaceholder type="chats" />}>
-                <ChatsPage 
-                  onSelectChat={handleSelectChat} 
-                  className="chats"
-                />
-              </Suspense>
-              <Suspense fallback={<LoadingPlaceholder type="chat" />} key={userId}>
-                <ChatPage 
-                  key={userId} // Add key here to trigger remount on userId change
-                  userId={userId} 
-                  onCreateChat={() => toggleDialog('isCreateDialogOpen')} 
-                  onJoinChat={() => toggleDialog('isJoinDialogOpen')} 
-                  className="chatBox" 
-                />
-              </Suspense>
-            </>
-          ) : 
-          <>
-              <Suspense fallback={<LoadingPlaceholder type="chats" />}>
-                <ChatsPage 
-                  onSelectChat={handleSelectChat} 
-                  className="chats"
-                />
-              </Suspense>
-              <div className="start-chat-container">
-                <button className='start-chat-button' onClick={()=>toggleDialog('isCreateDialogOpen')}>Create Channel</button>
-                <button className='join-chat-button' onClick={()=>toggleDialog('isJoinDialogOpen')}>Join Channel</button>
+          )}
+        </div>
+
+        {/* Mobile Dialogs */}
+        <Suspense fallback={<LoadingPlaceholder type="dialog" />}>
+          <CreateChatDialog 
+            isOpen={dialogStates.isCreateDialogOpen} 
+            onClose={() => toggleDialog('isCreateDialogOpen')} 
+            onConfirm={() => toggleDialog('isCreateDialogOpen')}
+          />
+        </Suspense>
+
+        <Suspense fallback={<LoadingPlaceholder type="dialog" />}>
+          <JoinChatDialog 
+            isOpen={dialogStates.isJoinDialogOpen} 
+            onClose={() => toggleDialog('isJoinDialogOpen')} 
+            onJoin={handleSelectChat} 
+          />
+        </Suspense>
+
+        <Suspense fallback={<LoadingPlaceholder type="dialog" />}>
+          <EditProfileDialog 
+            isOpen={dialogStates.isEditProfileOpen} 
+            onClose={() => toggleDialog('isEditProfileOpen')}
+            initialData={{
+              username: profileDetails?.username ?? '',
+              name: profileDetails?.name ?? '',
+              profile_url: profileDetails?.profile_url ?? ''
+            }}
+            setProfileDetails={setProfileDetails} 
+          />
+        </Suspense>
+
+        <Suspense fallback={<LoadingPlaceholder type="dialog" />}>
+          <ProfilePage
+            isOpen={dialogStates.isProfileOpen}
+            onClose={() => toggleDialog('isProfileOpen')}
+            onEditProfile={() => toggleDialog('isEditProfileOpen')}
+            user_details={profileDetails}
+          />
+        </Suspense>
+      </>
+    );
+  }
+
+  // Desktop Layout
+  return (
+    <>
+      <div className="h-screen w-full bg-[#0e0e0e] p-1 overflow-hidden">
+        <div className="grid h-full grid-cols-[4rem_1fr_2fr] gap-1 w-full">
+          {/* Sidebar */}
+          <div className="flex flex-col items-center justify-end rounded-md bg-[#030404] p-4 pb-4 h-full">
+            <div className="flex flex-col gap-6 text-sm text-gray-400">
+              <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors">
+                <Settings className="w-8 h-8" />
               </div>
-          </>
-        )}
+              <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors">
+                <KeyRound className="w-8 h-8" />
+              </div>
+              <div 
+                onClick={() => toggleDialog('isProfileOpen')} 
+                className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors"
+              >
+                {profileDetails && profileDetails.profile_url ? (
+                  <img 
+                    src={profileDetails.profile_url} 
+                    alt="profile" 
+                    className="w-8 h-8 rounded-full object-cover hover:ring-2 hover:ring-violet-500 transition-all" 
+                  />
+                ) : (
+                  <User className="w-8 h-8" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Chats Panel */}
+          <div className="h-full overflow-hidden">
+            <Suspense fallback={<LoadingPlaceholder type="chats" />}>
+              <ChatsPage 
+                onSelectChat={handleSelectChat} 
+                openProfile={() => toggleDialog('isProfileOpen')}
+                profile_details={profileDetails ?? {}}
+                onCreateChat={() => toggleDialog('isCreateDialogOpen')}
+                onJoinChat={() => toggleDialog('isJoinDialogOpen')}
+              />
+            </Suspense>
+          </div>
+
+          {/* Main Content Panel */}
+          <div className="h-full overflow-hidden">
+            {userId ? (
+              <Suspense fallback={<LoadingPlaceholder type="chat" />}>
+                <ChatPage
+                  key={userId}
+                  userId={userId}
+                />
+              </Suspense>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-6 rounded-md bg-black text-gray-200 h-full w-full">
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl font-semibold text-white">Welcome to Chat</h2>
+                  <p className="text-gray-400 max-w-md">
+                    Create a new channel or join an existing one to start chatting
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 hover:shadow-lg transform hover:-translate-y-0.5 px-8 py-3 text-white font-medium shadow-lg 
+                             transition-all duration-200
+                             active:translate-y-0 active:shadow-md min-w-[140px]"
+                    onClick={() => toggleDialog('isCreateDialogOpen')}
+                  >
+                    Create Channel
+                  </button>
+                  <button
+                    className="rounded-full bg-[#3f3f5f] px-8 py-3 text-white font-medium shadow-lg
+                             transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:bg-[#4a4a6a]
+                             active:translate-y-0 active:shadow-md min-w-[140px]"
+                    onClick={() => toggleDialog('isJoinDialogOpen')}
+                  >
+                    Join Channel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      
+
+      {/* Desktop Dialogs */}
       <Suspense fallback={<LoadingPlaceholder type="dialog" />}>
         <CreateChatDialog 
           isOpen={dialogStates.isCreateDialogOpen} 
           onClose={() => toggleDialog('isCreateDialogOpen')} 
+          onConfirm={() => toggleDialog('isCreateDialogOpen')}
         />
       </Suspense>
 
@@ -163,7 +268,11 @@ const Layout = () => {
         <EditProfileDialog 
           isOpen={dialogStates.isEditProfileOpen} 
           onClose={() => toggleDialog('isEditProfileOpen')}
-          initialData={profileDetails}
+          initialData={{
+            username: profileDetails?.username ?? '',
+            name: profileDetails?.name ?? '',
+            profile_url: profileDetails?.profile_url ?? ''
+          }}
           setProfileDetails={setProfileDetails} 
         />
       </Suspense>

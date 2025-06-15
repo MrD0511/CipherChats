@@ -7,17 +7,18 @@ export interface Chat {
   message_id: string;
   channel_id: string;
   sender_id: string;
-  recepient_id: string;
-  type: string;
-  sub_type: string;
+  recipient_id: string;
+  type: "system" | "message" | "e2ee_status";
+  sub_type: "enable" | "disable" | ""; // e.g., "message", "e2ee_status", etc.
   message: string;
-  message_type: string;
+  message_type: "text" | "image" | "video" | "audio" | "file" | "";
   file_name?: string;
   file_url?: string;
-  status: string; // e.g., "sent", "delivered", "read"
+  status: "sent" | "delivered" | "read" | "unsent" | ""; // e.g., "sent", "delivered", "read"
   timestamp: string;
   file_size?: number;
   file_exp?: string;
+  replied_message_id?: string; // Optional field for replied messages
 }
 
 // Extend Dexie to include the chat table
@@ -30,7 +31,7 @@ class ChatAppDexie extends Dexie {
     this.version(1).stores({
       keys: 'channel_id, privateKey',
       isE2ee : 'channel_id, isActive',
-      chat : '++id, message_id, channel_id, sender_id, recepient_id, type, sub_type, message, message_type, file_name, file_url, status, timestamp, file_size, file_exp',
+      chat : '++id, message_id, channel_id, sender_id, recipient_id, type, sub_type, message, message_type, file_name, file_url, status, timestamp, file_size, file_exp, replied_message_id',
     });
   }
 }
@@ -39,7 +40,7 @@ let db = new ChatAppDexie();
 
 
 async function addMessage(message: Message) {
-  await db.chat.add({ message_id: message.message_id, channel_id: message.channel_id, sender_id: message.sender_id, recepient_id: message.recipient_id, type: message.type, sub_type: message.sub_type || "", message: message.message, message_type: message.message_type, file_name: message.file_name, file_url: message.file_url, status: message.status || "", timestamp: message.timestamp, file_size: message.file_size, file_exp: message.file_exp });
+  await db.chat.add({ message_id: message.message_id, channel_id: message.channel_id, sender_id: message.sender_id, recipient_id: message.recipient_id, type: message.type, sub_type: message.sub_type || "", message: message.message, message_type: message.message_type, file_name: message.file_name, file_url: message.file_url, status: message.status || "", timestamp: message.timestamp, file_size: message.file_size, file_exp: message.file_exp, replied_message_id: message.replied_message_id });
 }
 
 async function getMessage(channel_id: string, size: number, number: number) {

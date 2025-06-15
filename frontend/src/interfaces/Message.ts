@@ -12,8 +12,9 @@ interface Message {
     file_size?: number;
     file_url?: string;
     timestamp: string;
-    status?: "sent" | "delivered" | "read";
+    status?: "sent" | "delivered" | "read" | "unsent";
     file_exp?: string;
+    replied_message_id?: string;
 }
 
 interface sendingMessage {
@@ -30,6 +31,7 @@ interface sendingMessage {
     timestamp: string;
     file_size?: number;
     file_exp?: string;
+    replied_message_id?: string;
 }
 
 export type { Message, sendingMessage };

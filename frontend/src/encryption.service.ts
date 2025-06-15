@@ -17,7 +17,6 @@ class encryptionService{
     }
 
     async initialize(){
-        console.log(this.channel_id, this.partner_id);
 
         try {
             const e2eeStatus = await db.isE2ee.get(this.channel_id);

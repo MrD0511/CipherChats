@@ -60,7 +60,7 @@ async function create_new_connection(channel_id: string) {
     await db.keys.put({ channel_id, privateKey })
     const publicKey = await exportPublicKey(keyPair)
     await store_public_key(channel_id, publicKey).catch((err) => { console.error(err) })
-    return privateKey;
+    return keyPair.privateKey;
 }
 
 async function importPrivateKey(privateKeyString: string) {
@@ -97,14 +97,14 @@ async function get_connection_keys(channel_id: string, partner_id: string) {
 
     let privateKeyObj = await db.keys.get(channel_id);
     let privateKeyString: string;
+    let importedPrivateKey: CryptoKey;
     if (!privateKeyObj) {
-        privateKeyString = await create_new_connection(channel_id)
+        importedPrivateKey = await create_new_connection(channel_id);
     } else {
-        privateKeyString = privateKeyObj.privateKey
+        importedPrivateKey = await importPrivateKey(privateKeyObj.privateKey)
     }
 
-    if (partnerPublicKey && privateKeyString) {
-        const importedPrivateKey = await importPrivateKey(privateKeyString)
+    if (partnerPublicKey && importedPrivateKey) {
         const importedPartnerPublicKey = await importPublicKey(partnerPublicKey)
         return { partnerPublicKey: importedPartnerPublicKey, privateKey: importedPrivateKey }
     } else {
