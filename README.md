@@ -178,7 +178,6 @@ Visit `http://localhost:5173` to access the application.
 
 ```
 cipherchats/
-chatapp/
 │
 ├── backend/                  # FastAPI backend
 │   ├── app/
