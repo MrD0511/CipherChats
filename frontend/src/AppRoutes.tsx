@@ -4,6 +4,7 @@ import Login from './pages/auth/Login/Login';
 import Signup from './pages/auth/Signup/SignUp';
 import NotFound from './pages/notFound/notFound';
 import { WebSocketProvider } from './websocketContext';
+import KeysPage from './pages/keys/keys';
 
 function AppRoutes() {
   const location = useLocation();
@@ -23,6 +24,12 @@ function AppRoutes() {
             <Route path='/' element={<Layout />} />
             <Route path='/chats/:userId' element={<Layout />} />
             <Route path='*' element={<NotFound />} />
+            {
+              window.innerWidth > 768 ? (
+                <Route path='/keys' element={<Layout />} />
+              ) : (
+                <Route path='/keys' element={<KeysPage />} />
+              )}
           </Routes>
         </WebSocketProvider>
       )}

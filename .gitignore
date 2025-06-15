@@ -3,6 +3,7 @@ frontend/.pnp
 backend/env
 backend/.env
 backend/.venv
+frontend/build
 .pnp.js
 backend/app/__pycache__
 backend/app/db/__pycache__
@@ -15,7 +16,7 @@ frontend/build
 frontend/dist
 frontend/.env.production
 frontend/.env.development
-
+backend/app/kychat-6502c-firebase.json
 # testing
 /coverage
 

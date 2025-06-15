@@ -168,7 +168,7 @@ export default function ChatBox({
   return (
     <div
       ref={chatBoxRef}
-      className="chat-box flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 bg-black text-white
+      className="chat-box flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-4 bg-gray-950 text-white
                  scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700 
                  hover:scrollbar-thumb-gray-600 scrollbar-corner-gray-900
                  scroll-smooth w-full"

@@ -57,7 +57,7 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
   };
 
   return (
-    <div className="flex flex-col h-full bg-black text-gray-200 rounded-md">
+    <div className="flex flex-col h-full bg-gray-950 text-gray-200 rounded-md">
       <header className="flex justify-between items-center p-3 bg-gray-900 border-b border-[#3f3f5f]">
         <div className="fade-in">
             <div className="text-xl md:text-2xl font-bold tracking-widest bg-gradient-to-r from-violet-500 to-cyan-400 bg-clip-text text-transparent">

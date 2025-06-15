@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useNavigate, useParams, Outlet,} from 'react-router-dom';
-// import './layout.scss';
 import { User, Settings, KeyRound } from 'lucide-react';
 import axiosInstance from '../../axiosInstance.js';
-// import webSocketService from '../../websocket.service.js';
+import { useLocation } from 'react-router-dom';
+import KeysPage from '../keys/keys.js';
 
 const ChatPage = lazy(() => import('../chatPage/chatPage.js'));
 const ChatsPage = lazy(() => import('../chats/chatsPage.js'));
@@ -43,6 +43,7 @@ const Layout = () => {
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
   const { userId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   interface DialogStates {
     isCreateDialogOpen: boolean;
@@ -165,15 +166,15 @@ const Layout = () => {
   // Desktop Layout
   return (
     <>
-      <div className="h-screen w-full bg-[#0e0e0e] p-1 overflow-hidden">
+      <div className="h-screen w-full bg-black p-1 overflow-hidden">
         <div className="grid h-full grid-cols-[4rem_1fr_2fr] gap-1 w-full">
           {/* Sidebar */}
-          <div className="flex flex-col items-center justify-end rounded-md bg-[#030404] p-4 pb-4 h-full">
+          <div className="flex flex-col items-center justify-end rounded-md bg-gray-950 p-4 pb-4 h-full">
             <div className="flex flex-col gap-6 text-sm text-gray-400">
               <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors">
                 <Settings className="w-8 h-8" />
               </div>
-              <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors">
+              <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors" onClick={() => navigate('/keys')}>
                 <KeyRound className="w-8 h-8" />
               </div>
               <div 
@@ -216,6 +217,10 @@ const Layout = () => {
                 />
               </Suspense>
             ) : (
+              location.pathname === "/keys" ? 
+                <KeysPage />
+              :
+
               <div className="flex flex-col items-center justify-center gap-6 rounded-md bg-black text-gray-200 h-full w-full">
                 <div className="text-center space-y-4">
                   <h2 className="text-2xl font-semibold text-white">Welcome to Chat</h2>
