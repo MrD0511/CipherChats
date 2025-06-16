@@ -17,6 +17,9 @@ frontend/dist
 frontend/.env.production
 frontend/.env.development
 backend/app/kychat-6502c-firebase.json
+backend/app/cipherchats_firebase_config.json
+backend/cipherchats_firebase_config.json
+
 # testing
 /coverage
 

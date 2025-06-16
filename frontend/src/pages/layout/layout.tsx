@@ -218,10 +218,10 @@ const Layout = () => {
               </Suspense>
             ) : (
               location.pathname === "/keys" ? 
-                <KeysPage />
+                <KeysPage onCreateChannel={() => toggleDialog('isCreateDialogOpen')} />
               :
 
-              <div className="flex flex-col items-center justify-center gap-6 rounded-md bg-black text-gray-200 h-full w-full">
+              <div className="flex flex-col items-center justify-center gap-6 rounded-md bg-gray-950 text-gray-200 h-full w-full">
                 <div className="text-center space-y-4">
                   <h2 className="text-2xl font-semibold text-white">Welcome to Chat</h2>
                   <p className="text-gray-400 max-w-md">
@@ -230,8 +230,9 @@ const Layout = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
-                    className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 hover:shadow-lg transform hover:-translate-y-0.5 px-8 py-3 text-white font-medium shadow-lg 
-                             transition-all duration-200
+                    className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 
+                              hover:from-cyan-700 hover:to-violet-700 hover:shadow-lg transform hover:-translate-y-0.5 
+                              px-8 py-3 text-white font-medium shadow-lg transition-all duration-200
                              active:translate-y-0 active:shadow-md min-w-[140px]"
                     onClick={() => toggleDialog('isCreateDialogOpen')}
                   >

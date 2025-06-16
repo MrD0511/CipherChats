@@ -14,3 +14,7 @@ class create_channel_model(BaseModel):
 class create_channel_response_model(BaseModel):
     channel_id: str
     key: str
+
+class edit_key_note_model(BaseModel):
+    key_id: str
+    note: str

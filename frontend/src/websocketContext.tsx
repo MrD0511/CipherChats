@@ -236,8 +236,12 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
   useEffect(() => {
     const url = import.meta.env.VITE_WEBSOCKET_URL;
     const token = localStorage.getItem('access_token')
-    connect(`${url}/ws/chat?token=${token}`)
-  }, [connect]); // Empty dependency array ensures it only runs once when the hook is mounted
+    connect(`${url}/ws/chat?token=${token}`);
+
+    return () => {
+      disconnect(); // Clean up on unmount
+    };
+  }, []); // Empty dependency array ensures it only runs once when the hook is mounted
 
   const getUnsendMessages = async (): Promise<sendingMessage[]> => {
     const unsentMessages = await db.chat.where('status').equals('unsent').toArray();

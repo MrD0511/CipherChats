@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, auth, storage
 import pathlib
 
-cred_path = pathlib.Path(__file__).parent / "kychat-6502c-firebase.json"
+cred_path = pathlib.Path(__file__).parent / "../cipherchats_firebase_config.json"
 
 cred  = credentials.Certificate(str(cred_path))
 

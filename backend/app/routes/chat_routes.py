@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from ..db import get_collection
-from ..services import user_auth_services
+from ..services import user_auth_services, clean_key_document
 from bson import ObjectId, json_util
 import json
 from datetime import datetime
 from ..services import chat_service
-from ..models import store_public_key_model, get_public_key_model, create_channel_model, create_channel_response_model
+from ..models import store_public_key_model, get_public_key_model, create_channel_model, create_channel_response_model, edit_key_note_model
 from ..websocket import manager
 
 router = APIRouter()
@@ -125,7 +125,7 @@ async def create_chat(create_channel: create_channel_model, user : dict = Depend
             "key" : random_key,
             "user_id" : user_data['_id'],
             "note" : create_channel.note,
-            "createdAt" : datetime.now()
+            "created_at" : datetime.now()
         })
 
         return { "key" : random_key, "channel_id" : str(channel.inserted_id)}
@@ -343,4 +343,71 @@ async def get_e2ee_status(id : str, user : dict = Depends(user_auth_services.get
     except Exception as e:
         print("get_e2ee_status : ",e)
         print(e.with_traceback)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+@router.get('/get_keys')
+async def get_keys(user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+        print("hi")
+        user_data = await user_auth_services.get_user_by_username(user['sub'])
+
+        keys = await channels_collection.find(
+            { "user_id": ObjectId(user_data['_id']), "key": { "$exists": True } }
+        ).to_list()
+
+        keys = [clean_key_document(k) for k in keys]
+
+        return {
+            "keys": keys
+        }
+    
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("get_keys : ", e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post('/edit_key_note')
+async def edit_key_note(data: edit_key_note_model, user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+        channelExists = await channels_collection.find_one({
+            "_id": ObjectId(data.key_id),
+            "user_id": ObjectId(user['sub'])
+        })
+
+        if not channelExists:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        await channels_collection.update_one(
+            {"_id": ObjectId(data.key_id)},
+            {"$set": {"note": data.note}}
+        )
+
+        return { "success": True, "msg": "Note updated successfully"}
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("edit_key_note : ", e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+@router.delete('/delete_key/{key_id}')
+async def delete_key(key_id: str, user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+        channelExists = await channels_collection.find_one({
+            "_id": ObjectId(key_id),
+            "user_id": ObjectId(user['sub'])
+        })
+
+        if not channelExists:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        await channels_collection.delete_one({"_id": ObjectId(key_id)})
+
+        return { "success": True, "msg": "Key deleted successfully"}
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("delete_key : ", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
