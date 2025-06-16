@@ -200,7 +200,7 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     socket.current.onopen = () => {
       isConnected.current = true;
       reconnectAttempts.current = 0; // Reset reconnection attempts after successful connection
-      console.log('WebSocket connection established');
+      console.log('WebSocket connection established', connectionUrl);
       setConnectionState(true);
       if (!hasSentQueuedMessages.current) {
         hasSentQueuedMessages.current = true;
