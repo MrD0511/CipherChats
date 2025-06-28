@@ -37,14 +37,14 @@ class connection_manager:
             await chat_service.queue_message(sender_id, recipient_id, { "isE2ee" : isE2ee, "channel_id" : channel_id }, 'e2ee')
 
     async def send_message_to_user(self, message: str, sender_id: str, recipient_id: str):
-        print(f"Sending message from {sender_id} to {recipient_id}")
+        
         if recipient_id in self.active_connections:
-            print(f"Recipient {recipient_id} is online, sending message directly.")
+            
             recipient_socket = self.active_connections[recipient_id]
             await recipient_socket.send_json(message)
         else:
-            print(f"Queuing message for {recipient_id} from {sender_id}")
-            await chat_service.queue_message(message)
+            if(message.get("event") == None or message.get("event") != "typing"):
+                await chat_service.queue_message(message)
 
 manager = connection_manager()
 
@@ -71,7 +71,7 @@ async def chat_websocket(websocket : WebSocket):
             if(data.get("message_type")):
                 await manager.send_message_to_user({"message_id": data.get('message_id'), "channel_id": data['channel_id'], "sender_id" : user['sub'], "recipient_id" :  data['recipient_id'], "type": data.get('type'), "sub_type": data.get('sub_type'), "message": data.get('message'), "message_type": data.get('message_type'), "file_name": data.get('file_name'), "file_url": data.get('file_url'), "timestamp" : data.get('timestamp'), "file_exp" : data.get('file_exp'), "file_size": data.get('file_size'), "replied_message_id": data.get('replied_message_id')}, user['sub'], data['recipient_id'])
             elif data.get("event"):
-                await manager.send_message_to_user(data, user['sub'], data['recipient_id'])                
+                await manager.send_message_to_user({"event": data.get("event"), "sender_id": user['sub'], "recipient_id": data['recipient_id'], "channel_id": data['channel_id']}, user['sub'], data['recipient_id'])
 
     except Exception as err:
         manager.disconnect(user['sub'])

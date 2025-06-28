@@ -7,16 +7,14 @@ from .firebase import firebase_app
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",  # Replace with your frontend URL
-    "https://secrete-chat.vercel.app",
-    "https://secrete-chat-mrd0511s-projects.vercel.app",
-    "0.0.0.0/0",
-    "*"
+    "http://localhost:5173",  # Replace with your frontend URL
+    "https://cipherchats.vercel.app",
+    "https://cipherchats-mrd0511s-projects.vercel.app"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  # Or specify the methods you want to allow
     allow_headers=["*"],  # Or specify the headers you want to allow

@@ -39,6 +39,50 @@ async def store_public_key(request : store_public_key_model, user : dict = Depen
                     "public_key" : request['public_key']
                 }
             })
+
+            partner_id = await channels_collection.aggregate([
+                # Step 1: Match messages where the user is either the sender or recipient
+                {
+                    "$match": {
+                        "_id" : ObjectId(request['channel_id'])
+                    }
+                },
+                # Step 2: Add a new field to identify who the partner (the other person) is
+                {
+                    "$addFields": {
+                        "partner_id": {
+                            "$cond": [
+                                { "$eq": ["$user_id", user_data['_id']] },  # If user is the sender
+                                "$partner_id",                              # Get recipient's ID
+                                "$user_id"                                  # Else get sender's ID
+                            ]
+                        }
+                    }
+                },
+                # Step 3: Group by the partner_id to get unique chat participants
+                {
+                    "$group": {
+                        "_id": "$partner_id",          # Group by the ID of the partner
+                    }
+                },
+                # Step 5: Optionally project the fields you want (e.g., partner details and latest message)
+                {
+                    "$project": {
+                        "_id": 0,                         # Exclude the default _id
+                        "partner_id": "$_id"
+                    }
+                }
+            ]).to_list()
+            
+
+            await manager.send_message_to_user(
+                {
+                    "event": "update_public_key",
+                    "sender_id": str(user["sub"]),
+                    "channel_id": str(request['channel_id']),
+                    "recipient_id": str(partner_id[0]['partner_id']) if partner_id else None,
+                }, str(user['sub']), str(partner_id[0]['partner_id']) if partner_id else None
+            )
         else:
             await public_keys_collection.insert_one({
                 "user_id" : ObjectId(str(user_data['_id'])),
@@ -54,7 +98,7 @@ async def store_public_key(request : store_public_key_model, user : dict = Depen
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        print("store_public_key : ", e)
+        print("store_public_key : ", e.with_traceback())
         raise HTTPException(status_code=500, detail="Internal error")
 
 @router.post('/chat/get_public_key')
@@ -344,7 +388,8 @@ async def get_e2ee_status(id : str, user : dict = Depends(user_auth_services.get
         print("get_e2ee_status : ",e)
         print(e.with_traceback)
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    
+
+
 @router.get('/get_keys')
 async def get_keys(user: dict = Depends(user_auth_services.get_current_user)):
     try:
