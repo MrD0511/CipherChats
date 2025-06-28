@@ -30,7 +30,7 @@ async function getPublicKey(channel_id: string, partner_id: string) {
         const response = await axiosInstance.post(`/chat/get_public_key`, { channel_id: channel_id, partner_id: partner_id })
 
         if (response.status === 200) {
-            return response.data.public_key
+            return importPublicKey(response.data.public_key)
         } else {
             return null
         }
@@ -93,6 +93,9 @@ async function importPublicKey(publicKeyString: string) {
 
 
 async function get_connection_keys(channel_id: string, partner_id: string) {
+    if (!channel_id || !partner_id) {
+        return null
+    }
     let partnerPublicKey = await getPublicKey(channel_id, partner_id)
 
     let privateKeyObj = await db.keys.get(channel_id);
@@ -105,8 +108,7 @@ async function get_connection_keys(channel_id: string, partner_id: string) {
     }
 
     if (partnerPublicKey && importedPrivateKey) {
-        const importedPartnerPublicKey = await importPublicKey(partnerPublicKey)
-        return { partnerPublicKey: importedPartnerPublicKey, privateKey: importedPrivateKey }
+        return { partnerPublicKey: partnerPublicKey, privateKey: importedPrivateKey }
     } else {
         return null
     }

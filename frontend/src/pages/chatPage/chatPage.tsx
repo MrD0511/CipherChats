@@ -24,7 +24,7 @@ const FetchAllMessages = ({
     setIsLoading(true);
 
     try {
-      const prevMessages = await getMessage(channel_id, 30, paginationNumber);
+      const prevMessages = await getMessage(channel_id, 10, paginationNumber);
       if (prevMessages.length !== 0) {
         prevMessages.forEach((message) => {
           setMessages((prev: any) => [message, ...prev]);
@@ -143,7 +143,6 @@ const ChatPage = ({ userId }: { userId: string }) => {
       message: '',
       message_type: '',
       timestamp: new Date().toISOString(),
-      
     };
 
     setMessages((prev) => [...prev, message]);

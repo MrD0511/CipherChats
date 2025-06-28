@@ -41,7 +41,7 @@ function useMessageHandler(){
           }
     
           if (message.type == "message") {
-    
+              console.log("Processing message:", message);
               const decryptedMessage = await e2eeHandlerInstance.decryptMessage(message.message)
               const messageData : Message = {
                 message_id: message.message_id,
@@ -63,7 +63,7 @@ function useMessageHandler(){
               if(activeChannel.current === message.channel_id) messageEmmiter.current.emit('onMessage', messageData);
               await addMessage(messageData);
 
-          } else if (message.type == "e2ee_status") {
+          } else if (message.type === "e2ee_status") {
     
               await e2eeHandlerInstance.toggleE2ee(message.isE2ee)
               const messageData : Message = {
@@ -80,14 +80,20 @@ function useMessageHandler(){
                 timestamp: message.timestamp,
                 file_exp: message.file_exp
               };
-              if(activeChannel.current === message.channel_id){
+              if(activeChannel.current != null && activeChannel.current === message.channel_id){
                 messageEmmiter.current.emit('onMessage', messageData);
                 messageEmmiter.current.emit('onE2eeToggle', { status : message.isE2ee, type : "e2eeEvent" });
               } 
               await addMessage(messageData);
 
-          } else if (message.event) {
+          } else if (message.event === "typing") {
             if(activeChannel.current === message.channel_id) messageEmmiter.current.emit('onEvent', message);
+          } else if (message.event === "update_public_key") {
+            console.log("Update public key event received:", message);
+            e2eeHandlerInstance = await getE2eeHandlerInstance(message.sender_id);
+            if (e2eeHandlerInstance) {
+              await e2eeHandlerInstance.updatePartnerPublicKey();
+            }
           }
     
         } catch (err) {
@@ -96,10 +102,11 @@ function useMessageHandler(){
           isProcessingMessageQueue.current = false;
           handleMessageQueue();
         }
-    }
+    };
 
     const handleSocketMessages = async (event: any) => {
         const receivedMessage = JSON.parse(event.data);
+        console.log("Received message:", receivedMessage);
         messageQueue.current.push(receivedMessage);
     
         if (!isProcessingMessageQueue.current) {
@@ -121,7 +128,7 @@ function useMessageHandler(){
         }
 
         return instance;
-    } 
+    };
 
     return {
         usersMap,
@@ -143,7 +150,6 @@ export const useWebSocket = () => {
 };
 
 import { PropsWithChildren } from "react";
-import { set } from "date-fns";
 
 export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
   const socket = useRef<WebSocket | null>(null);
@@ -199,8 +205,10 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     // Set up WebSocket event handlers
     socket.current.onopen = () => {
       isConnected.current = true;
-      reconnectAttempts.current = 0; // Reset reconnection attempts after successful connection
-      console.log('WebSocket connection established', connectionUrl);
+      
+      // Reset reconnection attempts after successful connection
+      reconnectAttempts.current = 0;
+      
       setConnectionState(true);
       if (!hasSentQueuedMessages.current) {
         hasSentQueuedMessages.current = true;
@@ -269,13 +277,13 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     if (queueToSend.length === 0) {
       queueToSend = await getUnsendMessages();
     }
-    console.log(queueToSend);
+    
     if (queueToSend.length === 0) return;
 
     const newQueue: typeof messageQueue = [];
 
     for (const message of queueToSend) {
-      console.log("for loopp")
+      
       if (socket.current && socket.current.readyState === WebSocket.OPEN) {
         console.log("if stats")
         try {

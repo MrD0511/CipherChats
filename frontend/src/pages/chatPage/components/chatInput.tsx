@@ -3,6 +3,7 @@ import axiosInstance from '../../../axiosInstance';
 import { Image as ImageIcon, Send, File, Headphones, FileVideo, X, Reply, Paperclip } from 'lucide-react';
 import { useWebSocket } from '../../../websocketContext';
 import { Message } from '../../../interfaces/Message';
+import { set } from 'date-fns';
 
 type WebSocketContextType = {
   sendEvent: (event: any) => void;
@@ -27,6 +28,7 @@ export default function ChatInput({ userId, handleMessage, channel_id, replyingM
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [files, setFiles] = useState<FileWithStatus[]>([]);
+  const [disableSend, setDisableSend] = useState(false);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -36,6 +38,7 @@ export default function ChatInput({ userId, handleMessage, channel_id, replyingM
   }, [inputValue]);
 
   const handleSubmit = async () => {
+    setDisableSend(true);
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.file?.size > 10 * 1024 * 1024) {
@@ -68,16 +71,17 @@ export default function ChatInput({ userId, handleMessage, channel_id, replyingM
 
     if (inputValue.trim()) {
       if (typingTimeout.current) clearTimeout(typingTimeout.current);
-      sendEvent({ event: 'typing', recipient_id: userId, channel_id });
-      handleMessage(inputValue, 'text', null, null, null);
-      setInputValue('');
-    }
-    setFiles([]);
-    setReplyingMessage(null);
+        sendEvent({ event: 'typing', recipient_id: userId, channel_id });
+        handleMessage(inputValue, 'text', null, null, null);
+        setInputValue('');
+      }
+      setFiles([]);
+      setReplyingMessage(null);
+      setDisableSend(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && disableSend === false) {
       e.preventDefault();
       handleSubmit();
     }
@@ -155,7 +159,14 @@ export default function ChatInput({ userId, handleMessage, channel_id, replyingM
       {/* File Previews */}
       {files.length > 0 && (
         <div className="mx-4 mb-2">
-          <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-3 max-h-[200px] overflow-y-auto backdrop-blur-sm">
+          <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-3 max-h-[200px] overflow-y-auto backdrop-blur-sm
+            scrollbar-thin scrollbar-track-gray-950 scrollbar-thumb-gray-700 
+            hover:scrollbar-thumb-gray-600 scrollbar-corner-gray-900 scroll-smooth w-full"                
+            style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgb(17, 24, 39) rgb(3, 7, 18)'
+            }}>
+              
             <div className="flex flex-col gap-2">
               {files.map((fileWithStatus, index) => (
                 <div key={index} className="relative bg-gray-800 rounded-lg p-3 border border-gray-600">
@@ -248,7 +259,7 @@ export default function ChatInput({ userId, handleMessage, channel_id, replyingM
             <button
               className="p-3 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white rounded-lg transition-transform duration-150 hover:shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               onClick={handleSubmit}
-              disabled={!inputValue.trim() && files.length === 0}
+              disabled={disableSend || (inputValue.trim() === '' && files.length === 0)}
               title="Send message"
             >
               <Send size={16} />

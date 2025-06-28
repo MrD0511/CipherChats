@@ -17,59 +17,142 @@ export default function ChatBox({
   fetchMessages: () => Promise<boolean>;
   setReplyingMessage: (replyingMessage: MessageType | null) => void;
 }) {
+
   const chatBoxRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [finished, setFinished] = useState(false);
-  const previousScrollHeightRef = useRef<number>(0);
+  const isAtBottomRef = useRef<boolean>(true);
+  const lastMessageCountRef = useRef<number>(0);
+  const scrollAnchorRef = useRef<{ messageId: string; offset: number } | null>(null);
 
-  useEffect(() => {
-    if (chatBoxRef.current) {
-      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+  // Create a scroll anchor before loading older messages
+  const createScrollAnchor = useCallback(() => {
+    const chatbox = chatBoxRef.current;
+    if (!chatbox || messages.length === 0) return;
+
+    const chatboxRect = chatbox.getBoundingClientRect();
+    const messageElements = chatbox.querySelectorAll('[data-message-id]');
+    
+    // Find the message that's currently visible at the top of the viewport
+    for (const element of messageElements) {
+      const rect = element.getBoundingClientRect();
+      const relativeTop = rect.top - chatboxRect.top;
+      
+      if (relativeTop >= -50 && relativeTop <= chatbox.clientHeight) {
+        const messageId = element.getAttribute('data-message-id');
+        if (messageId) {
+          scrollAnchorRef.current = {
+            messageId,
+            offset: relativeTop
+          };
+          break;
+        }
+      }
     }
   }, [messages]);
+
+  // Restore scroll position using the anchor
+  const restoreScrollPosition = useCallback(() => {
+    const chatbox = chatBoxRef.current;
+    const anchor = scrollAnchorRef.current;
+    
+    if (!chatbox || !anchor) return;
+
+    const targetElement = chatbox.querySelector(`[data-message-id="${anchor.messageId}"]`);
+    if (targetElement) {
+      const chatboxRect = chatbox.getBoundingClientRect();
+      const elementRect = targetElement.getBoundingClientRect();
+      const currentOffset = elementRect.top - chatboxRect.top;
+      const scrollAdjustment = currentOffset - anchor.offset;
+      
+      chatbox.scrollTop += scrollAdjustment;
+      scrollAnchorRef.current = null;
+    }
+  }, []);
+
+  // Handle scroll position management
+  useEffect(() => {
+    const chatbox = chatBoxRef.current;
+    if (!chatbox) return;
+
+    const currentMessageCount = messages.length;
+    const messagesAdded = currentMessageCount - lastMessageCountRef.current;
+    
+    if (messagesAdded > 0) {
+      if (loading && scrollAnchorRef.current) {
+        // Restoring position after loading older messages
+        // Use double RAF to ensure DOM is fully updated
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            restoreScrollPosition();
+          });
+        });
+      } else if (!loading && isAtBottomRef.current) {
+        // New messages arrived and user was at bottom - scroll to bottom
+        requestAnimationFrame(() => {
+          chatbox.scrollTop = chatbox.scrollHeight;
+        });
+      }
+    }
+
+    lastMessageCountRef.current = currentMessageCount;
+  }, [messages, loading, restoreScrollPosition]);
+
+  // Handle recipient typing indicator
+  useEffect(() => {
+    const chatbox = chatBoxRef.current;
+    if (!chatbox || !recipientTyping) return;
+
+    if (isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        chatbox.scrollTop = chatbox.scrollHeight;
+      });
+    }
+  }, [recipientTyping]);
 
   const handleScroll = useCallback(async () => {
     const chatbox = chatBoxRef.current;
     if (!chatbox || loading || finished) return;
 
-    if (chatbox.scrollTop <= 5) {
+    const scrollTop = chatbox.scrollTop;
+    const scrollHeight = chatbox.scrollHeight;
+    const clientHeight = chatbox.clientHeight;
+    const scrollBottom = scrollHeight - scrollTop - clientHeight;
+
+    // Update bottom detection
+    isAtBottomRef.current = scrollBottom < 10;
+
+    // Load older messages if scrolled near top
+    if (scrollTop <= 50) {
+      createScrollAnchor();
       setLoading(true);
-      previousScrollHeightRef.current = chatbox.scrollHeight;
 
       try {
-        const isFinished = await fetchMessages();
-        if (!isFinished) setFinished(true);
+        const hasMore = await fetchMessages();
+        if (!hasMore) setFinished(true);
       } catch (err) {
         console.error('Fetching error:', err);
+        scrollAnchorRef.current = null; // Clear anchor on error
       } finally {
         setLoading(false);
       }
     }
-  }, [fetchMessages, loading, finished]);
+  }, [fetchMessages, loading, finished, createScrollAnchor]);
 
-  useEffect(() => {
-    if (loading || !chatBoxRef.current) return;
-    const chatbox = chatBoxRef.current;
-    const diff = chatbox.scrollHeight - previousScrollHeightRef.current;
-
-    if (diff > 0 && previousScrollHeightRef.current > 0) {
-      chatbox.scrollTop = diff;
-    }
-  }, [messages, loading]);
-
+  // Scroll event listener setup
   useEffect(() => {
     const chatBox = chatBoxRef.current;
     if (!chatBox || finished) return;
 
     let scrollTimeout: NodeJS.Timeout;
-    const throttled = () => {
+    const throttledScroll = () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(handleScroll, 100);
     };
 
-    chatBox.addEventListener('scroll', throttled, { passive: true });
+    chatBox.addEventListener('scroll', throttledScroll, { passive: true });
     return () => {
-      chatBox.removeEventListener('scroll', throttled);
+      chatBox.removeEventListener('scroll', throttledScroll);
       clearTimeout(scrollTimeout);
     };
   }, [handleScroll, finished]);

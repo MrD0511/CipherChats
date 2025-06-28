@@ -1,6 +1,6 @@
 import { db } from "./indexdb.service"; 
 import axiosInstance from "./axiosInstance";
-import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys } from "./e2eeManager";
+import { create_new_connection, decrypt_message, encrypt_message, get_connection_keys, getPublicKey } from "./e2eeManager";
 
 class encryptionService{
 
@@ -13,22 +13,28 @@ class encryptionService{
     constructor(partner_id: string, channel_id: string){
         this.partner_id = partner_id;
         this.channel_id = channel_id;
-        this.isE2ee = false; // default value, will be set in initialize
+        this.isE2ee = true; // default value, will be set in initialize
     }
 
     async initialize(){
-
         try {
-            const e2eeStatus = await db.isE2ee.get(this.channel_id);
-            this.isE2ee = !!(e2eeStatus && e2eeStatus.isActive);
+            typeof this.partner_id !== 'string' && console.error("partner_id is not a string");
+            const e2eeStatus = await db.isE2ee
+                                .where("channel_id")
+                                .equals(this.channel_id)
+                                .first();
+
+            this.isE2ee = !!(e2eeStatus && e2eeStatus.isActive) || true;
 
             const connectionKeys = await get_connection_keys(this.channel_id, this.partner_id);
+            console.log("Connection keys:", connectionKeys);
             if (connectionKeys) {
                 this.partner_public_key = connectionKeys.partnerPublicKey;
                 this.user_private_key = connectionKeys.privateKey;
             } else {
-                let new_connection = await create_new_connection(this.channel_id);
-                this.user_private_key = new_connection;
+                console.warn("No connection keys found, creating new connection.");
+                this.user_private_key = await create_new_connection(this.channel_id);
+                this.partner_public_key = await getPublicKey(this.channel_id, this.partner_id);
             }
         } catch (error) {
             console.error("Error initializing encryption:", error);
@@ -87,6 +93,16 @@ class encryptionService{
     async toggleE2ee(isE2ee: boolean){
         this.isE2ee = isE2ee;
         await db.isE2ee.update(this.channel_id, { isActive: isE2ee });
+    }
+
+    async updatePartnerPublicKey(){
+        try{
+            let partnerPublicKey = await getPublicKey(this.channel_id, this.partner_id);
+            this.partner_public_key = partnerPublicKey;
+            console.log("Updated partner public key:", this.partner_public_key);
+        }catch(error){
+            console.error("Error updating partner public key:", error);
+        }
     }
 }
 
