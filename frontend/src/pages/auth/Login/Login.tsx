@@ -76,6 +76,18 @@ const Login = () => {
     })
   };
 
+  const handleGuestLogin = (username: string) => {
+    axiosInstance.get(`auth/asGuest/${username}`)
+      .then((response) => {
+        localStorage.setItem('access_token', response.data.access_token);
+        navigate('/');
+      })
+      .catch((error) => {
+        console.error("Guest login failed:", error);
+        setErrorMsg("Guest login failed. Please try again.");
+      });
+  };
+
   return (
     <>
       <style>{`
@@ -226,7 +238,20 @@ const Login = () => {
               <FcGoogle className="text-xl" />
               Sign in with Google
             </button>
-
+            <button 
+              type="button"
+              onClick={() => handleGuestLogin("mark")}
+              className="mt-4 bg-gradient-primary text-white font-medium p-3 rounded-lg w-full transition-all duration-300 hover:-translate-y-1 shadow-violet-hover"
+            >
+              Guest Login as Mark
+            </button>
+            <button 
+              type="button"
+              onClick={() => handleGuestLogin("john")}
+              className="mt-4 bg-gradient-primary text-white font-medium p-3 rounded-lg w-full transition-all duration-300 hover:-translate-y-1 shadow-violet-hover"
+            >
+              Guest Login as John
+            </button>
             {/* Links */}
             <div className="mt-6 flex justify-between">
               <a href="/" className="text-violet-600 no-underline text-sm transition-colors duration-300 hover:text-violet-500">
