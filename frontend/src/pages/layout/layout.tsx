@@ -167,9 +167,9 @@ const Layout = () => {
   return (
     <>
       <div className="h-screen w-full bg-black p-1 overflow-hidden">
-        <div className="grid h-full grid-cols-[4rem_1fr_2fr] gap-1 w-full">
+        <div className="gap-1 w-full flex  h-full">
           {/* Sidebar */}
-          <div className="flex flex-col items-center justify-end rounded-md bg-gray-950 p-4 pb-4 h-full">
+          <div className="flex flex-col items-center justify-end rounded-md bg-gray-950 p-4 pb-4 h-full w-24">
             <div className="flex flex-col gap-6 text-sm text-gray-400">
               <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors">
                 <Settings className="w-8 h-8" />
@@ -195,7 +195,7 @@ const Layout = () => {
           </div>
 
           {/* Chats Panel */}
-          <div className="h-full overflow-hidden">
+          <div className="h-full w-1/3">
             <Suspense fallback={<LoadingPlaceholder type="chats" />}>
               <ChatsPage 
                 onSelectChat={handleSelectChat} 
@@ -208,7 +208,7 @@ const Layout = () => {
           </div>
 
           {/* Main Content Panel */}
-          <div className="h-full overflow-hidden">
+          <div className="h-full overflow-hidden w-full">
             {userId ? (
               <Suspense fallback={<LoadingPlaceholder type="chat" />}>
                 <ChatPage

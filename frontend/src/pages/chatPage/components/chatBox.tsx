@@ -165,10 +165,10 @@ export default function ChatBox({
   const renderMessageContent = (message: MessageType) => (
     <>
       {message.message && (
-        <div className="break-words break-all hyphens-auto leading-relaxed text-white text-sm w-full overflow-hidden">
+        <div className="leading-relaxed text-white text-sm w-full overflow-hidden" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           {message.message.split('\n').map((line, index) => (
             <React.Fragment key={index}>
-              <span className="block w-full break-words break-all overflow-wrap-anywhere">{line}</span>
+              <span className="block w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{line}</span>
               {index < message.message.split('\n').length - 1 && <br />}
             </React.Fragment>
           ))}

@@ -8,7 +8,7 @@ import {
 import { useWebSocket } from '../../../websocketContext';
 import axiosInstance from '../../../axiosInstance';
 
-const EllipsisButton = ({ userId, channel_id, addStatus }
+const Dropdown = ({ userId, channel_id, addStatus }
   : {
     userId: string;
     channel_id: string;
@@ -162,4 +162,4 @@ const EllipsisButton = ({ userId, channel_id, addStatus }
   );
 };
 
-export default EllipsisButton;
+export default Dropdown;

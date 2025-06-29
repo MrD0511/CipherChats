@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../axiosInstance';
 import { User, Search, MessageSquarePlus, UserPlus, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { db } from '../../indexdb.service';
 
 type Chat = {
-  partner_id?: { $oid: string };
+  partner_id?: string;
+  channel_id?: string;
   partner_details?: {
     name?: string;
     username?: string;
     profile_photo_url?: string;
   };
-  last_message?: string;
-  last_message_time?: string;
+  last_message: string;
+  last_message_time: string;
 };
 
 const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, onJoinChat }
@@ -31,7 +33,16 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
   useEffect(() => {
     const fetchChats = async () => {
       const response = await axiosInstance.get('/chat/get_chats');
-      setChats(response.data.chats);
+      var chatsData = response.data.chats || [];
+      // Ensure chatsData is an array
+      await Promise.all(chatsData.map(async (chat: any) => {
+        const lastMessage = await db.chat.where('channel_id').equals(chat.channel_id).last();
+        console.log("Last message for channel:", chat.channel_id, "is", lastMessage);
+        chat.last_message = lastMessage?.message || '';
+        chat.last_message_time = lastMessage?.timestamp || '';
+      }));
+
+      setChats(chatsData);
     };
 
     fetchChats();
@@ -56,8 +67,13 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
     setIsExpanded(!isExpanded);
   };
 
+  const renderTimestamp = (timestamp: string | number | Date) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
   return (
-    <div className="flex flex-col h-full bg-gray-950 text-gray-200 rounded-md">
+    <div className="flex flex-col h-full bg-gray-950 text-gray-200 rounded-md w-full">
       <header className="flex justify-between items-center p-3 bg-gray-900 border-b border-[#3f3f5f]">
         <div className="fade-in">
             <div className="text-xl md:text-2xl font-bold tracking-widest bg-gradient-to-r from-violet-500 to-cyan-400 bg-clip-text text-transparent">
@@ -78,7 +94,7 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 w-full">
         <div className="relative mb-4 p-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
           <input
@@ -95,14 +111,14 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
             filteredChats.map((chat, index) => (
               <div
                 key={index}
-                className="grid grid-cols-[3rem_1fr] items-center p-4 rounded-md hover:bg-gray-900 cursor-pointer transition-colors"
+                className="flex w-full items-center p-4 rounded-md hover:bg-gray-900 cursor-pointer transition-colors"
                 onClick={() => {
-                  if (chat?.partner_id?.$oid) {
-                    onSelectChat(chat.partner_id.$oid);
+                  if (chat?.partner_id) {
+                    onSelectChat(chat.partner_id);
                   }
                 }}
               >
-                <div>
+                <div className="shrink-0">
                   {chat?.partner_details?.profile_photo_url ? (
                     <img
                       src={chat.partner_details.profile_photo_url}
@@ -113,13 +129,19 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
                     <User className="w-10 h-10 text-gray-500 bg-[#3f3f5f] p-2 rounded-full" />
                   )}
                 </div>
-                <div className="ml-4">
-                  <div className="font-bold mb-1">
+                <div className="ml-4 flex-1 min-w-0">
+                  <div className="font-bold mb-1 truncate">
                     {chat.partner_details?.name}
                   </div>
-                  <div className="flex justify-between items-center text-sm text-gray-400 gap-2">
-                    <div className="truncate flex-grow">{chat?.last_message || ''}</div>
-                    <div className="text-xs">{chat?.last_message_time || ''}</div>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="truncate flex-1 min-w-0">
+                      {chat.last_message || ''}
+                    </div>
+                    {chat.last_message_time && (
+                      <div className="text-xs shrink-0">
+                        {renderTimestamp(chat.last_message_time)}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -143,7 +165,7 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
       {isMobileView && (
         <div className={`fixed bottom-6 right-6 flex flex-col-reverse items-end z-10 ${isExpanded ? 'expanded' : ''}`}>
           <button
-            className="w-14 h-14 rounded-full bg-[#6d28d9] text-white flex justify-center items-center shadow-md hover:scale-110 transition-transform"
+            className="w-14 h-14 rounded-full bg-gradient-primary text-white flex justify-center items-center shadow-md hover:scale-110 transition-transform"
             onClick={toggleExpand}
           >
             <Plus size={24} />

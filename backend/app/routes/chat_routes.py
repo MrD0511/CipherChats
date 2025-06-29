@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from ..db import get_collection
-from ..services import user_auth_services, clean_key_document
+from ..services import user_auth_services, clean_key_document, clean_get_chats_doc
 from bson import ObjectId, json_util
 import json
 from datetime import datetime
@@ -253,7 +253,8 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
             # Step 3: Group by the partner_id to get unique chat participants
             {
                 "$group": {
-                    "_id": "$partner_id",          # Group by the ID of the partner
+                    "_id": "$partner_id",
+                    "channel_id": { "$first": "$_id" }  # Save the original _id (channel id)
                 }
             },
             # Step 4: Join with the users collection to get details of the partner
@@ -275,11 +276,14 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
                     "_id": 0,                         # Exclude the default _id
                     "partner_id": "$_id",              # Include the partner_id
                     "partner_details": 1,          # Include the partner details
+                    'channel_id': 1,  # Include the channel_id
                 }
             }
         ]).to_list()
 
-        response = json.loads(json_util.dumps({ "chats" : chats }))
+        result_chats = [clean_get_chats_doc(chat) for chat in chats]
+
+        response = json.loads(json_util.dumps({ "chats" : result_chats }))
         return response
     
     except HTTPException as http_exc:

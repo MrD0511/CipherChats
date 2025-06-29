@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import axiosInstance from '../../../axiosInstance';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, ArrowLeft } from 'lucide-react';
-import EllipsisButton from './dropown';
+import Dropdown from './dropown';
 import { useWebSocket } from '../../../websocketContext';
 
 interface SenderDetails {
@@ -66,7 +66,7 @@ const PartnerDetails: React.FC<PartnerDetailsProps> = ({
         </span>
       </div>
       <div className="options md:block">
-        <EllipsisButton
+        <Dropdown
           userId={userId}
           addStatus={(status) => addE2eeStatus(status)}
           channel_id={channel_id}
