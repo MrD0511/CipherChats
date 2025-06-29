@@ -14,12 +14,14 @@ interface SenderDetails {
 
 interface PartnerDetailsProps {
   userId: string;
+  channel_id: string;
   onChannel_id: (channelId: string) => void;
   addE2eeStatus: (status: 'enable' | 'disable') => void;
 }
 
 const PartnerDetails: React.FC<PartnerDetailsProps> = ({
   userId,
+  channel_id,
   onChannel_id,
   addE2eeStatus,
 }) => {
@@ -67,6 +69,7 @@ const PartnerDetails: React.FC<PartnerDetailsProps> = ({
         <EllipsisButton
           userId={userId}
           addStatus={(status) => addE2eeStatus(status)}
+          channel_id={channel_id}
         />
       </div>
     </div>

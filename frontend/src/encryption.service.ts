@@ -31,10 +31,6 @@ class encryptionService{
             if (connectionKeys) {
                 this.partner_public_key = connectionKeys.partnerPublicKey;
                 this.user_private_key = connectionKeys.privateKey;
-            } else {
-                console.warn("No connection keys found, creating new connection.");
-                this.user_private_key = await create_new_connection(this.channel_id);
-                this.partner_public_key = await getPublicKey(this.channel_id, this.partner_id);
             }
         } catch (error) {
             console.error("Error initializing encryption:", error);
@@ -91,6 +87,7 @@ class encryptionService{
     }
 
     async toggleE2ee(isE2ee: boolean){
+        console.log("Toggling E2EE to:", isE2ee);
         this.isE2ee = isE2ee;
         await db.isE2ee.update(this.channel_id, { isActive: isE2ee });
     }

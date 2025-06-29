@@ -93,25 +93,17 @@ async function importPublicKey(publicKeyString: string) {
 
 
 async function get_connection_keys(channel_id: string, partner_id: string) {
-    if (!channel_id || !partner_id) {
-        return null
-    }
     let partnerPublicKey = await getPublicKey(channel_id, partner_id)
 
     let privateKeyObj = await db.keys.get(channel_id);
-    let privateKeyString: string;
     let importedPrivateKey: CryptoKey;
     if (!privateKeyObj) {
         importedPrivateKey = await create_new_connection(channel_id);
     } else {
         importedPrivateKey = await importPrivateKey(privateKeyObj.privateKey)
     }
-
-    if (partnerPublicKey && importedPrivateKey) {
-        return { partnerPublicKey: partnerPublicKey, privateKey: importedPrivateKey }
-    } else {
-        return null
-    }
+    
+    return { partnerPublicKey: partnerPublicKey, privateKey: importedPrivateKey }
 }
 
 async function arrayBufferToBase64(buffer: ArrayBuffer) {

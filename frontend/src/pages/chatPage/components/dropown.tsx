@@ -8,9 +8,10 @@ import {
 import { useWebSocket } from '../../../websocketContext';
 import axiosInstance from '../../../axiosInstance';
 
-const EllipsisButton = ({ userId, addStatus }
+const EllipsisButton = ({ userId, channel_id, addStatus }
   : {
     userId: string;
+    channel_id: string;
     addStatus: (status: "enable" | "disable") => void;
   }
 ) => {
@@ -89,10 +90,10 @@ const EllipsisButton = ({ userId, addStatus }
               onChange={(event) => {
                 setIsE2ee(event.target.checked)
                 if (event.target.checked) {
-                  enable_e2ee()
+                  enable_e2ee(userId, channel_id)
                   addStatus("enable")
                 } else {
-                  disable_e2ee()
+                  disable_e2ee(userId, channel_id)
                   addStatus("disable")
                 }
               }}

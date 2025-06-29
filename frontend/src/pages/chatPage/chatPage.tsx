@@ -153,6 +153,7 @@ const ChatPage = ({ userId }: { userId: string }) => {
     <div className="flex flex-col h-[calc(100vh-0.8rem)] w-full rounded-md bg-gray-950 text-gray-200">
       <PartnerDetails
         userId={userId}
+        channel_id={channelId}
         onChannel_id={setChannelId}
         addE2eeStatus={addE2eeStatus}
       />

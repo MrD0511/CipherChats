@@ -236,7 +236,7 @@ export default function ChatBox({
             `}
           >
             <div className="text-xs text-gray-300 mb-1 font-medium">
-              {replied.recipient_id === userId ? 'Recipient' : 'You'}
+              {replied.recipient_id === userId ? 'You' : 'Recipient'}
             </div>
             <div className="text-sm text-gray-100 break-words break-all hyphens-auto leading-relaxed w-full overflow-hidden">
               {getMessagePreview(replied)}

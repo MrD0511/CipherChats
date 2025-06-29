@@ -64,8 +64,8 @@ function useMessageHandler(){
               await addMessage(messageData);
 
           } else if (message.type === "e2ee_status") {
-    
-              await e2eeHandlerInstance.toggleE2ee(message.isE2ee)
+              message.sub_type == "enable" ? await e2eeHandlerInstance.toggleE2ee(true) : await e2eeHandlerInstance.toggleE2ee(false);
+              console.log("E2EE status changed:", message.sub_type);
               const messageData : Message = {
                 message_id: message.id,
                 channel_id: message.channel_id,
@@ -82,15 +82,15 @@ function useMessageHandler(){
               };
               if(activeChannel.current != null && activeChannel.current === message.channel_id){
                 messageEmmiter.current.emit('onMessage', messageData);
-                messageEmmiter.current.emit('onE2eeToggle', { status : message.isE2ee, type : "e2eeEvent" });
+                messageEmmiter.current.emit('onE2eeToggle', { status : message.sub_type == "enable" ? true : false , type : "e2eeEvent" });
               } 
               await addMessage(messageData);
 
           } else if (message.event === "typing") {
-            if(activeChannel.current === message.channel_id) messageEmmiter.current.emit('onEvent', message);
+            if( activeChannel.current != null && activeChannel.current === message.channel_id) messageEmmiter.current.emit('onEvent', message);
           } else if (message.event === "update_public_key") {
             console.log("Update public key event received:", message);
-            e2eeHandlerInstance = await getE2eeHandlerInstance(message.sender_id);
+            e2eeHandlerInstance = await getE2eeHandlerInstance(message.sender_id, message.channel_id);
             if (e2eeHandlerInstance) {
               await e2eeHandlerInstance.updatePartnerPublicKey();
             }
@@ -114,17 +114,17 @@ function useMessageHandler(){
         }
     };
 
-    const getE2eeHandlerInstance = async (partner_id: string) => {
+    const getE2eeHandlerInstance = async (partner_id: string, channel_id: string) => {
 
-        let instance = usersMap.current.get(activeChannel.current);
+        let instance = usersMap.current.get(channel_id);
 
         if(!instance){
-          if (typeof activeChannel.current !== "string" || !activeChannel.current) {
-            throw new Error("activeChannel.current is not a valid string");
+          if (typeof channel_id !== "string" || !channel_id) {
+            throw new Error("channel_id is not a valid string");
           }
-          instance = new encryptionService(partner_id, activeChannel.current);
+          instance = new encryptionService(partner_id, channel_id);
           await instance.initialize();
-          usersMap.current.set(activeChannel.current, instance);
+          usersMap.current.set(channel_id, instance);
         }
 
         return instance;
@@ -306,7 +306,7 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     if (socket.current && socket.current.readyState === WebSocket.OPEN) {
         try {
 
-            const instance = await messageHandler.getE2eeHandlerInstance(message.recipient_id);
+            const instance = await messageHandler.getE2eeHandlerInstance(message.recipient_id, message.channel_id);
             const encryptedMessage = await instance.encryptMessage(message.message);
             
             const data: sendingMessage = {
@@ -376,30 +376,18 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
-  const enable_e2ee = async () => {
-    if (typeof messageHandler.activeChannel.current !== "string" || !messageHandler.activeChannel.current) {
-      console.error("activeChannel.current is not a valid string");
-      return;
-    }
-    const instance = await messageHandler.getE2eeHandlerInstance(messageHandler.activeChannel.current);
+  const enable_e2ee = async (partner_id: string, channel_id: string) => {
+    const instance = await messageHandler.getE2eeHandlerInstance(partner_id, channel_id);
     await instance.enableE2ee();
   };
 
-  const disable_e2ee = async () => {
-    if (typeof messageHandler.activeChannel.current !== "string" || !messageHandler.activeChannel.current) {
-      console.error("activeChannel.current is not a valid string");
-      return;
-    }
-    const instance = await messageHandler.getE2eeHandlerInstance(messageHandler.activeChannel.current);
+  const disable_e2ee = async (partner_id: string, channel_id: string) => {
+    const instance = await messageHandler.getE2eeHandlerInstance(partner_id, channel_id);
     await instance.disableE2ee();
   };
 
-  const toggle_e2ee = async (isE2ee: boolean) => {
-    if (typeof messageHandler.activeChannel.current !== "string" || !messageHandler.activeChannel.current) {
-      console.error("activeChannel.current is not a valid string");
-      return;
-    }
-    const instance = await messageHandler.getE2eeHandlerInstance(messageHandler.activeChannel.current);
+  const toggle_e2ee = async (isE2ee: boolean, partner_id: string, channel_id: string) => {
+    const instance = await messageHandler.getE2eeHandlerInstance(partner_id, channel_id);
     await instance.toggleE2ee(isE2ee);
   };
 
