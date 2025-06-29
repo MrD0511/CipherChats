@@ -19,6 +19,9 @@ async def edit_profile(username: str = Form(...),
         # Get the user's data
         user_data = await user_auth_services.get_user_by_username(user['sub'])
 
+        if(user_data["role"] == "guest"):
+            raise HTTPException(status_code=403, detail="Guests cannot edit user profiles")
+
         # Check if the username already exists for another user
         username_exists = await user_collection.find_one({ "username": username, "_id": { "$ne": user_data['_id'] }})
         if username_exists:

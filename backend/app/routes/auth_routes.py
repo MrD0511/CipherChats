@@ -7,6 +7,7 @@ from ..models import Token, UserModel, SignInModel, GoogleAuthModel
 import firebase_admin
 from ..firebase import credentials, auth
 import pathlib
+from typing import Literal
 
 router = APIRouter()
 
@@ -23,6 +24,7 @@ async def signup(user: UserModel):
         hashed_password = user_auth_services.hash_password(user_dict['password'])
         user_dict['password_hash'] = hashed_password
         del user_dict['password']
+        user_dict['role'] = "user"
 
         await user_collection.insert_one(user_dict)
 
@@ -36,7 +38,6 @@ async def signup(user: UserModel):
 @router.post('/auth/signin', response_model=Token)
 async def signin(user : SignInModel):
     try:
-        user_collection = get_collection('user')
         user_data = await user_collection.find_one({
             "$or": [
                 {"email": user.identifier},
@@ -87,7 +88,8 @@ async def googleAuth(user: GoogleAuthModel):
                 "name" : name,
                 "username" : username,
                 "profile_photo_url" : pic,
-                "acc_type" : "Google"
+                "acc_type" : "Google",
+                "role": "user"
             }
 
             await user_collection.insert_one(user_data)
@@ -114,6 +116,23 @@ async def check_username(username : str):
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server Error")
+
+@router.get('/auth/asGuest/{username}', response_model=Token)
+async def signin_as_john(username: Literal["john", "mark"]):
+    try:
+        user_data = await user_collection.find_one({"username" : username})
+        
+        if(user_data == None):
+            raise HTTPException(status_code=400, detail="invalid credentials")
+    
+        access_token = user_auth_services.create_access_token({"sub": str(user_data["_id"])})
+
+        return { "access_token": access_token, "token_type": "bearer" }
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get('/auth/check-session')
 async def check_session(user: dict = Depends(user_auth_services.get_current_user)):

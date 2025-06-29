@@ -73,6 +73,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return payload
 
 async def get_user_by_username(id : str):
-    user_collection = get_collection('user')
-    data = await user_collection.find_one({ "_id" : ObjectId(id) },{"_id", "email", "name", "username", "profile_photo_url"})
-    return data
+    try:
+        user_collection = get_collection('user')
+        data = await user_collection.find_one({ "_id" : ObjectId(id) },{"_id", "email", "name", "username", "profile_photo_url", "role"})
+        return data
+    except Exception as e:
+        print("Error: ",e)
+        return None

@@ -101,6 +101,7 @@ async def store_public_key(request : store_public_key_model, user : dict = Depen
         print("store_public_key : ", e.with_traceback())
         raise HTTPException(status_code=500, detail="Internal error")
 
+
 @router.post('/chat/get_public_key')
 async def get_public_key(request : get_public_key_model, user : dict = Depends(user_auth_services.get_current_user)):
     try:
@@ -162,6 +163,9 @@ async def create_chat(create_channel: create_channel_model, user : dict = Depend
     try:
         
         user_data = await user_auth_services.get_user_by_username(user['sub'])
+
+        if(user_data["role"] == "guest"):
+            raise HTTPException(status_code=403, detail="Guests cannot create new chats.")
         
         random_key = await chat_service.genrate_key()
 
@@ -184,6 +188,10 @@ async def create_chat(create_channel: create_channel_model, user : dict = Depend
 async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_current_user)):
     try:
         user_data = await user_auth_services.get_user_by_username(user['sub'])
+
+        if(user_data["role"] == "guest"):
+            raise HTTPException(status_code=403, detail="Guests cannot join chats.")
+
         channel_record = await channels_collection.find_one({ "key" : key['key'] })
 
         if not channel_record:
@@ -284,6 +292,10 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
 async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
         user_data = await user_auth_services.get_user_by_username(user['sub'])
+
+        if(user_data["role"] == "guest"):
+            raise HTTPException(status_code=403, detail="Guests cannot delete chats.")
+
         if not user_data:
             raise HTTPException(status_code=401, detail="Unauthorized access")
         await channels_collection.delete_one({
@@ -343,7 +355,7 @@ async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_s
             }
         ]).to_list()
         
-        # await manager.send_e2ee_activation_notification(str(partner_id[0]['partner_id']), data['isE2ee'], channel_id, str(user_data['_id']))
+        print("e2ee: ",data['isE2ee'])
         await manager.send_message_to_user(
         {
             "channel_id": channel_id,
@@ -393,7 +405,6 @@ async def get_e2ee_status(id : str, user : dict = Depends(user_auth_services.get
 @router.get('/get_keys')
 async def get_keys(user: dict = Depends(user_auth_services.get_current_user)):
     try:
-        print("hi")
         user_data = await user_auth_services.get_user_by_username(user['sub'])
 
         keys = await channels_collection.find(
@@ -411,6 +422,7 @@ async def get_keys(user: dict = Depends(user_auth_services.get_current_user)):
     except Exception as e:
         print("get_keys : ", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 @router.post('/edit_key_note')
 async def edit_key_note(data: edit_key_note_model, user: dict = Depends(user_auth_services.get_current_user)):
@@ -435,7 +447,8 @@ async def edit_key_note(data: edit_key_note_model, user: dict = Depends(user_aut
     except Exception as e:
         print("edit_key_note : ", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    
+
+
 @router.delete('/delete_key/{key_id}')
 async def delete_key(key_id: str, user: dict = Depends(user_auth_services.get_current_user)):
     try:
