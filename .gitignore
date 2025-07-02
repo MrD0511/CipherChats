@@ -12,6 +12,7 @@ backend/app/services/__pycache__
 backend/__pycache__
 backend/app/routes/__pycache__
 backend/app/websocket/__pycache__
+backend/app/background_tasks/__pycache__
 frontend/build
 frontend/dist
 frontend/.env.production

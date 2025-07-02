@@ -45,7 +45,7 @@ def delete_file_from_firebase(file_url: str):
             print("file not found")
             return
         # Delete the file from Firebase Storage
-        # blob.delete()
+        blob.delete()
 
         print(f"File {file_path} deleted from Firebase Storage.")
     except Exception as e:
