@@ -169,7 +169,7 @@ const Layout = () => {
       <div className="h-screen w-full bg-black p-1 overflow-hidden">
         <div className="gap-1 w-full flex  h-full">
           {/* Sidebar */}
-          <div className="flex flex-col items-center justify-end rounded-md bg-gray-950 p-4 pb-4 h-full w-24">
+          <div className="flex flex-col items-center justify-end rounded-md bg-gray-950 p-4 pb-4 h-full w-16">
             <div className="flex flex-col gap-6 text-sm text-gray-400">
               <div className="w-8 h-8 text-center cursor-pointer hover:text-white transition-colors">
                 <Settings className="w-8 h-8" />

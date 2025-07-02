@@ -9,20 +9,28 @@ queued_messages_collection = get_collection('queued_messages')
 
 
 async def genrate_key(length=16):
+    try:
+        characters = string.ascii_letters + string.digits
+        while True:
+            key = ''.join(secrets.choice(characters) for _ in range(length))
+            exists = await keys_collection.find_one({key: key})
+            if not exists:
+                return key
+    except Exception as e:
+        print("genrate_key error:", e)
 
-    characters = string.ascii_letters + string.digits
-    while True:
-
-        key = ''.join(secrets.choice(characters) for _ in range(length))
-
-        exists = await keys_collection.find_one({ key : key})
-
-        if not exists:
-            return key
 
 async def queue_message(message):
-    await queued_messages_collection.insert_one(message)
+    try:
+        await queued_messages_collection.insert_one(message)
+    except Exception as e:
+        print("queue_message error:", e)
+
 
 async def get_pending_messages(recipient_id):
-    pending_messages = await queued_messages_collection.find({'recipient_id': recipient_id}).to_list()
-    return pending_messages
+    try:
+        pending_messages = await queued_messages_collection.find({'recipient_id': recipient_id}).to_list()
+        return pending_messages
+    except Exception as e:
+        print("get_pending_messages error:", e)
+        return []

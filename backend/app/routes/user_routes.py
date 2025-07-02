@@ -5,6 +5,7 @@ from ..services import user_auth_services
 from ..services import  user_auth_services
 from ..firebase_utils import upload_file_to_firebase, delete_file_from_firebase
 from bson import ObjectId
+from app.services import clean_object_ids
 
 router = APIRouter()
 user_collection = get_collection('user')
@@ -48,7 +49,13 @@ async def edit_profile(username: str = Form(...),
             }
         )
 
-        return {"msg": "Profile updated successfully", "profile_photo_url": profile_photo_url, "username": username, "name": name }
+        return {
+            "success": True,
+            "message": "Profile updated successfully",
+            "profile_photo_url": profile_photo_url,
+            "username": username, 
+            "name": name 
+        }
 
     except HTTPException as http_exc:
         raise http_exc
@@ -63,7 +70,10 @@ async def check_username(username : str, user : dict = Depends(user_auth_service
         username_exists = await user_collection.find_one({ "username" : username , "_id" : {"$ne" : ObjectId(user['sub'])}}, {"_id" : 1})
         if username_exists and str(username_exists['_id']) is not user['sub']:
             raise HTTPException(status_code=400, detail="Username already exists")
-        return { "msg" :"Username available" }
+        return { 
+            "success": True,
+            "message": "Username available"
+        }
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -79,12 +89,15 @@ async def get_profile(user : dict = Depends(user_auth_services.get_current_user)
         if not user_data:
             raise HTTPException(status_code=400, detail="User not found")
         
-        return { 
+        res = { 
+            "success": True,
             "_id" : str(user_data['_id']),
             "username" : user_data['username'],
             "name" : user_data["name"],
             "profile_url" : user_data.get("profile_photo_url")
         }
+    
+        return clean_object_ids(res)
     
     except HTTPException as http_exc:
         raise http_exc

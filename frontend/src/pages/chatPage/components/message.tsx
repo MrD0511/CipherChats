@@ -58,7 +58,7 @@ export default function Message({
 
     return (
         <div className={`flex ${isCurrentUser ? "justify-start" : "justify-end"} mb-3`}>
-            <div className="flex items-end max-w-[75%] gap-2">
+            <div className="flex items-end gap-2">
                 {/* Timestamp */}
                 <div className={`
                     text-xs text-gray-400 whitespace-nowrap self-end mb-1
@@ -91,7 +91,21 @@ export default function Message({
                                     src={message.file_url} 
                                     alt={message.file_name} 
                                     className="max-w-full max-h-80 object-cover rounded-lg"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const errorDiv = target.nextElementSibling as HTMLElement;
+                                        if (errorDiv) errorDiv.style.display = 'flex';
+                                    }}
                                 />
+                                {/* Error fallback */}
+                                <div className="hidden items-center justify-center min-h-[120px] bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-500">
+                                    <div className="text-center text-gray-300">
+                                        <File size={32} className="mx-auto mb-2" />
+                                        <div className="text-sm font-medium">Image failed to load</div>
+                                        <div className="text-xs text-gray-400 mt-1">{message.file_name}</div>
+                                    </div>
+                                </div>
                                 {/* Download overlay */}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                     <button
@@ -111,15 +125,15 @@ export default function Message({
 
                         {/* File/Video/Audio Messages */}
                         {message.message_type !== "text" && message.message_type !== "image" && (
-                            <div className="flex items-center gap-3 min-w-[220px] text-white">
+                            <div className="flex items-center gap-3 w-[260px] text-white overflow-hidden">
                                 {/* File Icon */}
                                 <div className="flex-shrink-0">
                                     {renderFileIcon()}
                                 </div>
 
                                 {/* File Info */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm truncate">
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                    <div className="font-medium text-sm overflow-hidden text-ellipsis whitespace-nowrap">
                                         {message.file_name}
                                     </div>
                                     <div className="text-xs text-gray-300 mt-1">

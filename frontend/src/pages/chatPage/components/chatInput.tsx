@@ -53,6 +53,7 @@ export default function ChatInput({ userId, handleMessage, channel_id, replyingM
 
       try {
         const response = await axiosInstance.post('file/upload', formData);
+        console.log('File uploaded successfully:', file.file.size);
         handleMessage('file',
           file.file.type.startsWith('image/') ? 'image'
             : file.file.type.startsWith('video/') ? 'video'

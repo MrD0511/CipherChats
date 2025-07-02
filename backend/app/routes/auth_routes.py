@@ -4,9 +4,7 @@ from ..db import get_collection
 from ..services import user_auth_services
 from ..services import user_auth_services
 from ..models import Token, UserModel, SignInModel, GoogleAuthModel
-import firebase_admin
-from ..firebase import credentials, auth
-import pathlib
+from ..firebase import auth
 from typing import Literal
 
 router = APIRouter()
@@ -29,12 +27,17 @@ async def signup(user: UserModel):
         await user_collection.insert_one(user_dict)
 
         access_token = user_auth_services.create_access_token({ 'sub' : str(user_dict['_id'])})
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {
+            "success": True,
+            "access_token": access_token, 
+            "token_type": "bearer"
+        }
     
     except Exception as e:
         print(e)
         return {"message" : "error"}
         
+
 @router.post('/auth/signin', response_model=Token)
 async def signin(user : SignInModel):
     try:
@@ -52,13 +55,18 @@ async def signin(user : SignInModel):
             raise HTTPException(status_code=400, detail="invalid credentials")
         
         access_token = user_auth_services.create_access_token(data={"sub": str(user_data['_id'])})
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {
+            "success": True,
+            "access_token": access_token, 
+            "token_type": "bearer"
+        }
     
     except HTTPException as http_exc:
         raise http_exc  # Re-raise HTTP exceptions to maintain status code
     except Exception as e:
         print("signin : ", e)
         raise HTTPException(status_code=500, detail="Internal server error")  # Raise an HTTPException for consistency
+
 
 @router.post('/auth/googleAuth', response_model=Token)
 async def googleAuth(user: GoogleAuthModel):
@@ -77,7 +85,11 @@ async def googleAuth(user: GoogleAuthModel):
                 raise HTTPException(status_code=400, detail="Try with email")
             
             access_token = user_auth_services.create_access_token({ 'sub' : str(user_exists['_id'])})
-            return {"access_token": access_token, "token_type": "bearer"}
+            return {
+                "success": True,
+                "access_token": access_token,
+                "token_type": "bearer"
+            }
 
         else:
             username = await user_auth_services.create_username(name)
@@ -95,7 +107,11 @@ async def googleAuth(user: GoogleAuthModel):
             await user_collection.insert_one(user_data)
 
             access_token = user_auth_services.create_access_token({ 'sub' : str(user_data['_id'])})
-            return {"access_token": access_token, "token_type": "bearer"}
+            return {
+                "success": True,
+                "access_token": access_token, 
+                "token_type": "bearer"
+            }
 
     except HTTPException as http_exc:
         raise http_exc
@@ -111,11 +127,15 @@ async def check_username(username : str):
         username_exists = await user_collection.find_one({ "username" : username}, {"_id" : 1})
         if username_exists:
             raise HTTPException(status_code=400, detail="Username already exists")
-        return { "msg" :"Username available" }
+        return { 
+            "success": True,
+            "message" :"Username available"
+        }
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server Error")
+
 
 @router.get('/auth/asGuest/{username}', response_model=Token)
 async def signin_as_john(username: Literal["john", "mark"]):
@@ -127,13 +147,21 @@ async def signin_as_john(username: Literal["john", "mark"]):
     
         access_token = user_auth_services.create_access_token({"sub": str(user_data["_id"])})
 
-        return { "access_token": access_token, "token_type": "bearer" }
+        return { 
+            "success": True,
+            "access_token": access_token, 
+            "token_type": "bearer" 
+        }
 
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
 @router.get('/auth/check-session')
 async def check_session(user: dict = Depends(user_auth_services.get_current_user)):
-    return { "isAuthenticated" : True }
+    return { 
+        "success": True,
+        "isAuthenticated" : True
+    }

@@ -272,7 +272,7 @@ export default function ChatBox({
         <div 
           key={idx} 
           data-message-id={msg.message_id}
-          className="w-full overflow-hidden"
+          // className="w-full"
         >
           <Message
             message={msg}

@@ -166,7 +166,23 @@ const KeysPage = ({onCreateChannel}
                 <div className="pt-8 px-4 pb-4">
                     <p className="text-gray-400 text-xl">Here you can manage your keys.</p>
                 </div>
-                
+
+                {keysData.length === 0 && (
+                    <div className="bg-gray-800/50 border border-gray-600 rounded-lg
+                        p-4 ml-4 mr-4 mb-4">
+                        <h2 className="text-gray-300 font-semibold text-lg mb-2">No Keys Found</h2>
+                        <p className="text-gray-400 text-sm mb-2">You can generate a new key to start chatting.</p>
+                    </div>
+                )}
+
+                { approvedRequests.length > 0 && (
+                    <div className="bg-gray-800/50 border border-gray-600 rounded-lg
+                        p-4 ml-4 mr-4 mb-4">
+                        <h2 className="text-gray-300 font-semibold text-lg mb-2">Approved Requests</h2>
+                        <p className="text-gray-400 text-sm mb-4">You can chat with these users.</p>
+                    </div>
+                )}
+
                 <div className="pb-8">
                     <div className="mt-2 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-11rem)]
                         scrollbar-thin scrollbar-track-gray-950 scrollbar-thumb-gray-700 

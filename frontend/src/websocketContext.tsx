@@ -322,6 +322,7 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
                 file_name: message.file_name,
                 file_url: message.file_url,
                 file_exp: message.file_exp,
+                file_size: message.file_size,
                 replied_message_id: message.replied_message_id,
             };
 
