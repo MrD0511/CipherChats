@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const NotFound = () => {
   const [glitchText, setGlitchText] = useState("404");
-
+  const navigate = useNavigate();
   // Subtle glitch effect for 404 text
   useEffect(() => {
     const glitchTexts = ["404", "4Ø4", "404", "ERR", "404"];
@@ -18,10 +19,12 @@ const NotFound = () => {
 
   const handleGoHome = () => {
     console.log("Navigate to home page");
+    navigate("/");
   };
 
   const handleGoBack = () => {
     console.log("Navigate back");
+    navigate(-1); // Go back to the previous page
   };
 
   return (
@@ -148,13 +151,6 @@ const NotFound = () => {
             </button>
           </div>
 
-          {/* Contact Info
-          <div className="mt-12 fade-in soft-pulse" style={{ animationDelay: '0.8s' }}>
-            <div className="text-gray-400 text-sm">
-              <div className="mb-1">Need help? Contact support</div>
-              <div className="text-purple-300">support@cipherchar.com</div>
-            </div>
-          </div> */}
         </div>
       </div>
     </>

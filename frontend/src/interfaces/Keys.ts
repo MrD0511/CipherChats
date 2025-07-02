@@ -6,4 +6,16 @@ interface Key {
     channel_id: string;
 }
 
-export default Key;
+interface Request {
+    _id: string;
+    user_id: string;
+    user_data: {
+        username: string;
+        profile_photo_url: string;
+    }
+}
+
+export {
+    Key,
+    Request
+};

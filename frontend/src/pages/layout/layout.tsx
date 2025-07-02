@@ -195,7 +195,7 @@ const Layout = () => {
           </div>
 
           {/* Chats Panel */}
-          <div className="h-full w-1/3">
+          <div className="h-full w-2/5">
             <Suspense fallback={<LoadingPlaceholder type="chats" />}>
               <ChatsPage 
                 onSelectChat={handleSelectChat} 
@@ -208,7 +208,7 @@ const Layout = () => {
           </div>
 
           {/* Main Content Panel */}
-          <div className="h-full overflow-hidden w-full">
+          <div className="h-full overflow-hidden w-3/5">
             {userId ? (
               <Suspense fallback={<LoadingPlaceholder type="chat" />}>
                 <ChatPage

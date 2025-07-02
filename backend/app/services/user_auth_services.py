@@ -72,7 +72,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = verify_token(token)
     return payload
 
-async def get_user_by_username(id : str):
+async def get_user_by_id(id : str):
     try:
         user_collection = get_collection('user')
         data = await user_collection.find_one({ "_id" : ObjectId(id) },{"_id", "email", "name", "username", "profile_photo_url", "role"})

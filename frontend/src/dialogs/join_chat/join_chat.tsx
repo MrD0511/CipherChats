@@ -3,8 +3,9 @@ import { X, Hash, Users } from 'lucide-react';
 import axiosInstance from '../../axiosInstance';
 import { create_new_connection } from '../../e2eeManager';
 import { db } from '../../indexdb.service';
+import { set } from 'date-fns';
 
-const JoinChatDialog = ({ isOpen, onClose, onJoin }
+const JoinChatDialog = ({ isOpen, onClose }
     : {
         isOpen: boolean;
         onClose: () => void;
@@ -15,6 +16,7 @@ const JoinChatDialog = ({ isOpen, onClose, onJoin }
     const [chatKey, setChatKey] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const [message, setMessage] = useState<string>('');
 
     if (!isOpen) return null;
 
@@ -30,11 +32,21 @@ const JoinChatDialog = ({ isOpen, onClose, onJoin }
         
         try {
             const response = await axiosInstance.post('/chat/join', { key: chatKey.trim() });
-            onJoin(response.data.user_id); 
-            create_new_connection(response.data?.channel_id);
-            await db.isE2ee.put({channel_id : response.data?.channel_id, isActive : false});
-            onClose();
+            if(!response.data.success) {
+                setError('Failed to join the channel. Please check the key.');
+                setTimeout(() => {
+                    setError('');
+                }, 5000 );
+                setLoading(false);
+                return;
+            }
             setChatKey(''); // Clear input on success
+            setMessage("A request to join the channel has been sent. You will be notified once the request is approved.");
+            await create_new_connection(response.data.channel_id);
+            await db.isE2ee.put({channel_id : response.data.channel_id, isActive : true});
+            setTimeout(() => {
+                setMessage('');
+            }, 5000 );
         } catch (error) {
             setError('Failed to join the channel. Please check the key.');
         }
@@ -99,6 +111,12 @@ const JoinChatDialog = ({ isOpen, onClose, onJoin }
                         </div>
                     )}
 
+                    {message && (
+                        <div className="mb-6 p-4 bg-green-900/30 border border-green-500/50 rounded-lg">
+                            <p className="text-green-400 text-sm text-center">{message}</p>
+                        </div>
+                    )}
+
                     {/* Input Section */}
                     <div className="mb-8">
                         <label htmlFor="chatKey" className="block text-sm font-medium text-gray-300 mb-3">
@@ -145,7 +163,7 @@ const JoinChatDialog = ({ isOpen, onClose, onJoin }
                             {loading ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Joining...
+                                    Requesting...
                                 </div>
                             ) : (
                                 'Join Channel'

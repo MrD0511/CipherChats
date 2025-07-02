@@ -17,7 +17,7 @@ const Dropdown = ({ userId, channel_id, addStatus }
 ) => {
   const [isOpen, setIsOpen] = useState(false);
   const { enable_e2ee, disable_e2ee } = useWebSocket()
-  const [isE2ee, setIsE2ee] = useState(false)
+  const [isE2ee, setIsE2ee] = useState(true)
   const { messageEmmiter } = useWebSocket()
 
 
@@ -68,6 +68,21 @@ const Dropdown = ({ userId, channel_id, addStatus }
     }
   }, [isOpen]);
 
+  const deleteChat = async () => {
+    try {
+      const response = await axiosInstance.delete(`/chat_delete/${userId}`);
+      if (response.data.success) {
+        addStatus("disable");
+        console.log('Chat deleted successfully');
+      } else {
+        console.error('Failed to delete chat:', response.data.message);
+      }
+
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+    }
+  };
+
   const actions = [
     {
       label: 'End-to-End Encryption',
@@ -111,7 +126,7 @@ const Dropdown = ({ userId, channel_id, addStatus }
     {
       label: 'Delete Chat',
       icon: <Trash2 />,
-      onClick: () => console.log('Delete')
+      onClick: () => deleteChat()
     }
   ];
 

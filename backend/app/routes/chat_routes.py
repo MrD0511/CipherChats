@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from ..db import get_collection
-from ..services import user_auth_services, clean_key_document, clean_get_chats_doc
+from ..services import user_auth_services, clean_get_chats_doc, clean_object_ids
 from bson import ObjectId, json_util
 import json
 from datetime import datetime
@@ -15,12 +15,13 @@ user_collection = get_collection('user')
 messages_collection = get_collection('messages')
 public_keys_collection = get_collection('public_keys')
 channels_collection = get_collection('channels')
+joining_requests_collection = get_collection('joining_requests')
 
 
 @router.post('/chat/store_public_key')
 async def store_public_key(request : store_public_key_model, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
         request = request.dict()
 
         channel_exists = await channels_collection.find_one({"_id" : ObjectId(request['channel_id'])}, {"_id" : 1})
@@ -106,7 +107,7 @@ async def store_public_key(request : store_public_key_model, user : dict = Depen
 async def get_public_key(request : get_public_key_model, user : dict = Depends(user_auth_services.get_current_user)):
     try:
         request = request.dict()
-        # user_data = await user_auth_services.get_user_by_username(user['sub'])
+        # user_data = await user_auth_services.get_user_by_id(user['sub'])
         partner_exists = await user_collection.find_one({ "_id" : ObjectId(request['partner_id'])}, {"_id" : 1})
         
         if not partner_exists:
@@ -120,7 +121,8 @@ async def get_public_key(request : get_public_key_model, user : dict = Depends(u
             raise HTTPException(status_code=404, detail="Partner public key not found")
         
         return {
-            "public_key" : str(partner_public_key["public_key"])
+            "success": True,
+            "public_key": str(partner_public_key["public_key"])
         }
     except HTTPException as http_exc:
         raise http_exc
@@ -162,7 +164,7 @@ async def get_chat(id : str, user : dict = Depends(user_auth_services.get_curren
 async def create_chat(create_channel: create_channel_model, user : dict = Depends(user_auth_services.get_current_user)):
     try:
         
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
 
         if(user_data["role"] == "guest"):
             raise HTTPException(status_code=403, detail="Guests cannot create new chats.")
@@ -187,7 +189,7 @@ async def create_chat(create_channel: create_channel_model, user : dict = Depend
 @router.post('/chat/join')
 async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
 
         if(user_data["role"] == "guest"):
             raise HTTPException(status_code=403, detail="Guests cannot join chats.")
@@ -200,22 +202,24 @@ async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_cur
         if channel_record['user_id'] == user_data['_id']:
             raise HTTPException(status_code=400, detail="You cannot join your own channel.")
         
-        await channels_collection.update_one({
-            "key" : key['key'] 
-        },{
-            "$set" : {
-                "partner_id" : ObjectId(user_data["_id"]),
-            },
-            "$unset" : {
-                "key" : ""
-            }
+        recordExists = await joining_requests_collection.find_one({ 
+            "channel_id": channel_record["_id"],
+            "user_id": user_data["_id"]
         })
 
-        return {    
-                    "message" : "A request have been sent to the owner. Please wait for the response",
-                    "user_id" : str(channel_record['user_id']),
-                    "channel_id" : str(channel_record["_id"])
-                }
+        if(recordExists == None):
+            await joining_requests_collection.insert_one({ 
+                "channel_id": channel_record["_id"],
+                "user_id": user_data["_id"]
+            })
+
+        res = { "success": True, 
+                "message" : "A request have been sent to the owner. Please wait for the response",
+                "channel_id": channel_record['_id'],
+                "partner_id": channel_record["user_id"]
+             }
+        
+        return clean_object_ids(res)
     
     except HTTPException as http_exc:
         raise http_exc  
@@ -226,7 +230,7 @@ async def join_chat(key : dict, user : dict = Depends(user_auth_services.get_cur
 @router.get('/chat/get_chats')
 async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
 
         chats = await channels_collection.aggregate([
             # Step 1: Match messages where the user is either the sender or recipient
@@ -292,16 +296,17 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
         print("get_chats : ",e)
 
 
-@router.get('/chat/delete/{sender_id}')
+@router.delete('/chat_delete/{sender_id}')
 async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
 
         if(user_data["role"] == "guest"):
             raise HTTPException(status_code=403, detail="Guests cannot delete chats.")
 
         if not user_data:
             raise HTTPException(status_code=401, detail="Unauthorized access")
+        
         await channels_collection.delete_one({
             "$or" : [
                 {"user_id" : ObjectId(sender_id), "partner_id" : ObjectId(user_data["_id"])},
@@ -322,7 +327,7 @@ async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.
 @router.patch('/enable_e2ee/{channel_id}')
 async def enable_e2ee(channel_id, data : dict, user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
         await channels_collection.update_one({ "_id" : ObjectId(channel_id) }, { "$set" : {"is_e2ee" : data['isE2ee'] } })
 
         partner_id = await channels_collection.aggregate([
@@ -406,21 +411,54 @@ async def get_e2ee_status(id : str, user : dict = Depends(user_auth_services.get
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@router.get('/get_keys')
-async def get_keys(user: dict = Depends(user_auth_services.get_current_user)):
+@router.get('/get_keys_data')
+async def get_keys_data(user: dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
 
         keys = await channels_collection.find(
-            { "user_id": ObjectId(user_data['_id']), "key": { "$exists": True } }
+            {"user_id": user_data['_id'], "key": {"$exists": True}}
         ).to_list()
 
-        keys = [clean_key_document(k) for k in keys]
+        res = []
 
-        return {
-            "keys": keys
-        }
-    
+        for key in keys:
+            requests = await joining_requests_collection.aggregate([
+                {
+                    "$match": {
+                        "channel_id": key['_id']
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "user",
+                        "localField": "user_id",
+                        "foreignField": "_id",
+                        "as": "user_data"
+                    }
+                },
+                {
+                    "$unwind": "$user_data"
+                },
+                {
+                    "$project": {
+                        "_id": 1,
+                        "user_id": 1,
+                        "user_data.username": 1,
+                        "user_data.profile_photo_url": 1
+                    }
+                }
+            ]).to_list()
+
+            print(requests)
+
+            res.append({
+                "key": clean_object_ids(key),
+                "requests": clean_object_ids(requests)
+            })
+
+        return {"keys_data": clean_object_ids(res)}
+
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -456,15 +494,27 @@ async def edit_key_note(data: edit_key_note_model, user: dict = Depends(user_aut
 @router.delete('/delete_key/{key_id}')
 async def delete_key(key_id: str, user: dict = Depends(user_auth_services.get_current_user)):
     try:
+
+        try:
+            key_oid = ObjectId(key_id)
+            user_oid = ObjectId(user['sub'])  # assuming sub holds user's _id as string
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
         channelExists = await channels_collection.find_one({
-            "_id": ObjectId(key_id),
-            "user_id": ObjectId(user['sub'])
+            "_id": key_oid,
+            "user_id": user_oid
         })
 
         if not channelExists:
             raise HTTPException(status_code=404, detail="Channel not found")
+        
+        await joining_requests_collection.delete_many({
+            "channel_id": key_oid
+        })
 
-        await channels_collection.delete_one({"_id": ObjectId(key_id)})
+        await public_keys_collection.delete_many({"channel_id": key_oid})
+        await channels_collection.delete_one({"_id": key_oid})
 
         return { "success": True, "msg": "Key deleted successfully"}
 
@@ -473,3 +523,170 @@ async def delete_key(key_id: str, user: dict = Depends(user_auth_services.get_cu
     except Exception as e:
         print("delete_key : ", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+   
+@router.delete('/reject-request/{req_id}')
+async def reject_request(req_id: str, user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+        try:
+            req_oid = ObjectId(req_id)
+            user_oid = ObjectId(user['sub'])  # assuming sub holds user's _id as string
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+        
+        request_record = await joining_requests_collection.find_one({
+            "_id": req_oid
+        })
+
+        if not request_record:
+            raise HTTPException(status_code=404, detail="Request not found")
+                
+        channel_record = await channels_collection.find_one({
+            "user_id": user_oid,
+            "_id": request_record["channel_id"]
+        })
+
+        if not channel_record:
+            raise HTTPException(status_code=404, detail="Channel not found or unauthorized")
+        
+        await joining_requests_collection.delete_one({"_id": request_record["_id"]})
+
+        await public_keys_collection.delete_one({"chanel_id": channel_record["_id"], "user_id": request_record["user_id"]})
+
+        return {
+            "success": True,
+            "message": "Request rejected successfully."
+        }
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("reject request: ",e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+   
+@router.patch('/approve-request/{req_id}')
+async def approve_request(req_id: str, user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+        try:
+            req_oid = ObjectId(req_id)
+            user_oid = ObjectId(user['sub'])  # assuming sub holds user's _id as string
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
+        request_record = await joining_requests_collection.find_one({
+            "_id": req_oid
+        })
+
+        if not request_record:
+            raise HTTPException(status_code=404, detail="Request not found or unauthorized")
+    
+        channel_record = await channels_collection.find_one({"_id": request_record["channel_id"], "user_id": user_oid})
+
+        if not channel_record:
+            raise HTTPException(status_code=404, detail="Channel not found or unauthorized")
+        
+        await channels_collection.update_one(
+            {"_id": channel_record["_id"]},
+            {
+                "$set": {
+                    "partner_id": request_record["user_id"]
+                },
+                "$unset": {
+                    "key": "",
+                    "note": ""
+                }
+            }
+        )
+
+        joining_requests_collection.delete_many({"channel_id": channel_record["_id"]})
+
+        res = {
+            "success": True,
+            "message": "Request approved successfully",
+            "channel_id": channel_record["_id"],
+            "partner_id": request_record["user_id"]
+        }
+
+        return clean_object_ids(res)
+    
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("approve request: ", e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+
+@router.patch('/chat/refresh_connection/{channel_id}')
+async def update_connection(channel_id: str, user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+
+        try:
+            user_oid = ObjectId(user["sub"])
+            channel_oid = ObjectId(channel_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
+
+        channel_exists = await channels_collection.find_one({"_id" : channel_oid}, {"_id" : 1})
+
+        if not channel_exists:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        partner_id = await channels_collection.aggregate([
+            # Step 1: Match messages where the user is either the sender or recipient
+            {
+                "$match": {
+                    "_id" : channel_oid
+                }
+            },
+            # Step 2: Add a new field to identify who the partner (the other person) is
+            {
+                "$addFields": {
+                    "partner_id": {
+                        "$cond": [
+                            { "$eq": ["$user_id", user_data['_id']] },  # If user is the sender
+                            "$partner_id",                              # Get recipient's ID
+                            "$user_id"                                  # Else get sender's ID
+                        ]
+                    }
+                }
+            },
+            # Step 3: Group by the partner_id to get unique chat participants
+            {
+                "$group": {
+                    "_id": "$partner_id",          # Group by the ID of the partner
+                }
+            },
+            # Step 5: Optionally project the fields you want (e.g., partner details and latest message)
+            {
+                "$project": {
+                    "_id": 0,                         # Exclude the default _id
+                    "partner_id": "$_id"
+                }
+            }
+        ]).to_list()
+        
+        if not partner_id:
+            raise HTTPException(status_code=404, detail="partner not found")
+
+        await manager.send_message_to_user(
+            {
+                "event": "update_public_key",
+                "sender_id": str(user["sub"]),
+                "channel_id": channel_oid,
+                "recipient_id": str(partner_id[0]['partner_id']) if partner_id else None,
+            }, str(user['sub']), str(partner_id[0]['partner_id']) if partner_id else None
+        )
+
+        return {
+            "success": True,
+            "message" : "Request to refresh connection has been sent."
+        }
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("store_public_key : ", e.with_traceback())
+        raise HTTPException(status_code=500, detail="Internal error")

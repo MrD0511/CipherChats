@@ -4,7 +4,7 @@ from ..db import get_collection
 from ..services import user_auth_services
 from bson import ObjectId
 import json
-from ..services import user_auth_services,chat_service
+from ..services import user_auth_services,chat_service, clean_object_ids
 
 router = APIRouter()
 
@@ -61,7 +61,7 @@ async def chat_websocket(websocket : WebSocket):
         for message in pending_messages:
             id = message['_id']
             message.pop('_id', None)  # Remove _id from the message before sending
-            await websocket.send_json(message)
+            await websocket.send_json(clean_object_ids(message))
             queued_messages_collection.delete_one({ "_id" : ObjectId(id) })
 
         while True:

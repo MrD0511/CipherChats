@@ -40,15 +40,25 @@ class encryptionService{
     async encryptMessage(message: string){
         if (!this.isE2ee) return message;
         if (!this.partner_public_key) {
-            console.error("Encryption error: partner_public_key is null");
-            return message;
+            await this.refreshConnection();
+            if (!this.partner_public_key) {
+                console.error("Encryption error: partner_public_key is still null after update");
+                return message;
+            }
         }
         try {
             const encryptedMessage = await encrypt_message(this.partner_public_key, message);
             return encryptedMessage
         } catch (error) {
-            console.error("Encryption error:", error);
-            return message;
+            console.log("here updating")
+            await this.refreshConnection();
+            if (!this.partner_public_key) {
+                console.error("Encryption error: partner_public_key is still null after update");
+                return message; // Return original message if encryption fails
+            }else{
+                const encryptedMessage = await encrypt_message(this.partner_public_key, message);
+                return encryptedMessage;
+            }
         }
     }
 
@@ -99,6 +109,24 @@ class encryptionService{
             console.log("Updated partner public key:", this.partner_public_key);
         }catch(error){
             console.error("Error updating partner public key:", error);
+        }
+    }
+
+    async refreshConnection(){
+        try {
+            const connectionKeys = await get_connection_keys(this.channel_id, this.partner_id);
+            if (connectionKeys) {
+                this.partner_public_key = connectionKeys.partnerPublicKey;
+                this.user_private_key = connectionKeys.privateKey;
+            }
+            const response = await axiosInstance.patch(`/chat/refresh_connection/${this.channel_id}`);
+            if (response.data.success) {
+                console.log("Request to refresh connection has been sent.");
+            } else {
+                console.error("Failed to refresh connection:", response.data.message);
+            }
+        } catch (error) {
+            console.error("Error refreshing connection:", error);
         }
     }
 }

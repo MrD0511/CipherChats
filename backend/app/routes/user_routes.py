@@ -7,8 +7,8 @@ from ..firebase_utils import upload_file_to_firebase, delete_file_from_firebase
 from bson import ObjectId
 
 router = APIRouter()
-
 user_collection = get_collection('user')
+
 
 @router.post('/user/profile/edit')
 async def edit_profile(username: str = Form(...),
@@ -17,7 +17,7 @@ async def edit_profile(username: str = Form(...),
                        user: dict = Depends(user_auth_services.get_current_user)):
     try:
         # Get the user's data
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
 
         if(user_data["role"] == "guest"):
             raise HTTPException(status_code=403, detail="Guests cannot edit user profiles")
@@ -55,7 +55,8 @@ async def edit_profile(username: str = Form(...),
     except Exception as e:
         print("edit_profile error:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    
+
+
 @router.get('/user/check_username/{username}')
 async def check_username(username : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:
@@ -69,10 +70,11 @@ async def check_username(username : str, user : dict = Depends(user_auth_service
         print("check user username: ", e)
         raise HTTPException(status_code=500, detail="Internal server Error")
 
+
 @router.get('/user/profile')
 async def get_profile(user : dict = Depends(user_auth_services.get_current_user)):
     try:
-        user_data = await user_auth_services.get_user_by_username(user['sub'])
+        user_data = await user_auth_services.get_user_by_id(user['sub'])
         
         if not user_data:
             raise HTTPException(status_code=400, detail="User not found")
@@ -89,5 +91,3 @@ async def get_profile(user : dict = Depends(user_auth_services.get_current_user)
     except Exception as e:
         print("get_profile", e)
         raise HTTPException(status_code=500, detail="Internal server error.")
-    
-
