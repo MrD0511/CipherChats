@@ -296,6 +296,55 @@ async def get_chats(user : dict = Depends(user_auth_services.get_current_user)):
         print("get_chats : ",e)
 
 
+@router.get('/chat/get_chat_details/{channel_id}')
+async def get_chat_details(channel_id: str, user: dict = Depends(user_auth_services.get_current_user)):
+    try:
+        try:
+            channel_oid = ObjectId(channel_id)
+            user_oid = ObjectId(user['sub'])
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid ID format")
+
+        channel_record = await channels_collection.find_one({
+            "_id": channel_oid,
+            "$or": [
+                {"user_id": user_oid},
+                {"partner_id": user_oid}
+            ]
+        })
+
+        if not channel_record:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        
+        partner_details = {}
+        partner_record = {}
+        if(channel_record["user_id"] == user_oid):
+            partner_record = await user_collection.find_one({ "_id": channel_record["partner_id"] })
+        else:
+            partner_record = await user_collection.find_one({ "_id": channel_record["user_id"] })
+
+        partner_details = {
+            "partner_id": partner_record['_id'],
+            "channel_id": channel_record["_id"],
+            "partner_details": {
+                "name": partner_record['name'],
+                "username": partner_record['username'],
+                "profile_photo_url": partner_record['profile_photo_url']
+            } 
+        }
+
+        return {
+            "success": True,
+            "chat": clean_object_ids(partner_details)
+        }
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        print("get_chat_details: ",e)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 @router.delete('/chat_delete/{sender_id}')
 async def delete_chat(sender_id : str, user : dict = Depends(user_auth_services.get_current_user)):
     try:

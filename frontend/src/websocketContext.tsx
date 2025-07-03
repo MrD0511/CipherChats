@@ -61,6 +61,7 @@ function useMessageHandler(){
                 replied_message_id: message.replied_message_id
               };
               if(activeChannel.current === message.channel_id) messageEmmiter.current.emit('onMessage', messageData);
+              messageEmmiter.current.emit('onLastMessage', { channel_id: message.channel_id, message: decryptedMessage, timestamp: message.timestamp })
               await addMessage(messageData);
 
           } else if (message.type === "e2ee_status") {
@@ -150,6 +151,8 @@ export const useWebSocket = () => {
 };
 
 import { PropsWithChildren } from "react";
+import { create_new_connection } from "./e2eeManager";
+import { channel } from "diagnostics_channel";
 
 export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
   const socket = useRef<WebSocket | null>(null);
@@ -327,6 +330,8 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
             };
 
             socket.current.send(JSON.stringify(data));
+            messageHandler.messageEmitter.emit('onLastMessage', { channel_id: message.channel_id, message: message.message, timestamp: message.timestamp })
+
             
             updateMessageStatus(message.message_id, "sent");
         } catch (error) {
@@ -392,6 +397,18 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
     await instance.toggleE2ee(isE2ee);
   };
 
+
+  const checkConnectionKeys = async (channel_id: string) => {
+    try{
+      const key = await db.keys.where('channel_id').equals(channel_id).first();
+      if (!key) {
+        await create_new_connection(channel_id);
+      }
+    }catch(error){
+      console.log("Error checking connection keys:", error);
+    }
+  }
+
   return (
     <WebSocketContext.Provider
       value={{
@@ -409,7 +426,8 @@ export const WebSocketProvider = ({ children }: PropsWithChildren<{}>) => {
         enable_e2ee,
         disable_e2ee,
         toggle_e2ee,
-        sendEvent
+        sendEvent,
+        checkConnectionKeys
       }}
     >
       {children}

@@ -3,6 +3,7 @@ import axiosInstance from '../../axiosInstance';
 import { User, Search, MessageSquarePlus, UserPlus, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { db } from '../../indexdb.service';
+import { useWebSocket } from '../../websocketContext';
 
 type Chat = {
   partner_id?: string;
@@ -15,6 +16,7 @@ type Chat = {
   last_message: string;
   last_message_time: string;
 };
+
 
 const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, onJoinChat }
   : {
@@ -29,6 +31,7 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
   const [searchTerm, setSearchTerm] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  const { checkConnectionKeys, messageEmmiter } = useWebSocket()
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -48,9 +51,55 @@ const ChatsPage = ({ onSelectChat, profile_details, openProfile, onCreateChat, o
     fetchChats();
   }, []);
 
+  useEffect(()=>{
+    chats.map((chat)=>{
+      checkConnectionKeys(chat.channel_id);
+    })
+  }, [chats.length])
+
+
+  useEffect(()=>{
+    const handleIncomingMessages = (data: any) => {
+      setChats((prevChats) => {
+        const index = prevChats.findIndex(chat => chat.channel_id === data.channel_id);
+
+        if (index !== -1) {
+          // Chat exists, update it
+          return prevChats.map(chat =>
+            chat.channel_id === data.channel_id
+              ? {
+                  ...chat,
+                  last_message: data.message,
+                  last_message_time: data.timestamp,
+                }
+              : chat
+          );
+        } else {
+          // Chat not found, create a new one (customize as needed)
+
+          fetch_chat(data.channel_id, data.message, data.timestamp);
+          return [...prevChats]; // Add to top
+        }
+      });
+    };
+
+    messageEmmiter.on('onLastMessage', handleIncomingMessages)
+
+  }, [messageEmmiter])
+
   const handleResize = useCallback(() => {
     setIsMobileView(window.innerWidth <= 768);
   }, []);
+
+  const fetch_chat = async (channel_id: string, last_message: string, last_message_time: string) => {
+    const response = await axiosInstance.get(`/chat/get_chat_details/${channel_id}`);
+    if(response.data.success){
+      console.log("Fetched chat details:", response.data.chat);
+      setChats([{ ...response.data.chat, last_message: last_message, last_message_time: last_message_time }, ...chats]);
+    }else{
+      console.error("Failed to fetch chat details:", response.data.message);
+    }
+  }
 
   useEffect(() => {
     window.addEventListener('resize', handleResize);
