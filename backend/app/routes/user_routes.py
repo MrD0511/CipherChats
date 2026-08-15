@@ -3,9 +3,9 @@ from fastapi import Depends, HTTPException
 from ..db import get_collection
 from ..services import user_auth_services
 from ..services import  user_auth_services
-from ..firebase_utils import upload_file_to_firebase, delete_file_from_firebase
 from bson import ObjectId
 from app.services import clean_object_ids
+from ..azure_upload import upload_file
 
 router = APIRouter()
 user_collection = get_collection('user')
@@ -32,9 +32,8 @@ async def edit_profile(username: str = Form(...),
 
         # Handle profile photo upload
         if profile_photo:
-            if profile_photo_url:
-                delete_file_from_firebase(user_data.get('profile_photo_url'))
-            profile_photo_url = await upload_file_to_firebase(profile_photo, profile_photo.filename, "profile photo")
+            photo_data = await profile_photo.read()
+            profile_photo_url = await upload_file(profile_photo.filename, photo_data)
         else:
             profile_photo_url = user_data.get('profile_photo_url')
        
