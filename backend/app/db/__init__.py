@@ -1,1 +1,1 @@
-from .connection import client, get_collection
+from .connection import get_collection, get_client
